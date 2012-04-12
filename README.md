@@ -1,6 +1,6 @@
 # SimplerWorkflow
 
-TODO: Write a gem description
+A wrapper around Amazon's Simple Workflow Service meant to simplify declaring and using activities and workflow. Provides some sane defaults.
 
 ## Installation
 
@@ -18,7 +18,20 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+### Configuring AWS Gem
+
+We are using the aws-sdk gem to communicate with Amazon's service. You can configure the service by putting an ```aws.yml``` file
+in your config directory. The file should contain the following information:
+
+```
+development:
+  access_key_id: <Amazon Acess Key ID>
+  secret_access_key: <Amazon's secret access key>
+```
+
+This will authenticate your application or script against AWS and give you access to your SWF domain, workflows and activity.
+
+
 
 ## Contributing
 
