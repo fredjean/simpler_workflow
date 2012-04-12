@@ -31,7 +31,23 @@ development:
 
 This will authenticate your application or script against AWS and give you access to your SWF domain, workflows and activity.
 
+### Access a domain
 
+You will need to get a handle on a SWF domain before you can do anything else. Domains are accessed using the ```SimplerWorkflow::Domain```
+class. This declares a domain that does not retain workflow execution data:
+
+```ruby
+domain = SimplerWorkflow::Domain["my-domain"]
+```
+
+You can also get a handle on a domain that retains information about workflow execution for 10 days with the following code:
+
+```ruby
+domain = SimplerWorkflow::Domain.new("my-domain", 10)
+```
+
+Domains are scoped by AWS accounts. The name of the domain must be unique within the account. You do not need to create the domain on AWS
+since it is created the first time it is accessed.
 
 ## Contributing
 
