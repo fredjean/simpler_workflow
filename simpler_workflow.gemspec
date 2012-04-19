@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = SimplerWorkflow::VERSION
 
-  gem.add_dependency 'aws-sdk', '~> 1.3.6'
+  gem.add_dependency 'aws-sdk', '~> 1.4.0'
   gem.add_dependency 'map'
   gem.add_development_dependency 'rspec'
 end
