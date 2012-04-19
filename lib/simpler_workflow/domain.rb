@@ -1,6 +1,6 @@
 module SimplerWorkflow
   class Domain
-    def initialize(domain_name, retention = :none)
+    def initialize(domain_name, retention = 2)
       domain_name = domain_name.to_s
       @domain = swf.domains[domain_name]
       unless swf.domains.include?(@domain)
