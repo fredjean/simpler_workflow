@@ -133,7 +133,43 @@ they complete and what to do when they fail. The ```SimplerWorkflow::Workflow```
 By default, the workflow is setup to allow for a linear set of activities until the list runs out. This is convenient for simple
 workflows. There are also hooks to override what happens with each decision point to accomodate more complex workflows.
 
-Workflows are declared and registered through the ```SimplerWorkflow::Domain#register_workflow``` method.
+Workflows are declared and registered through the ```SimplerWorkflow::Domain#register_workflow``` method. This will register a
+workflow and configure it to start a linear workflow with version 1.0.0 of the :my_activity activity:
+
+```ruby
+my_workflow = domain.register_workflow :my_workflow, '1.0.0' do
+  initial_activity :my_activity, '1.0.0'
+end
+```
+
+The next step is to start the decision loop:
+
+```ruby
+my_workflow.decision_loop
+```
+
+#### Customizing the workflow
+
+There are hooks for different section of the decision loop. You can specify what happens when the workflow is started with the ```on_start_execution```
+method:
+
+```ruby
+my_workflow = domain.register_workflow :my_workflow, '1.0.0' do
+  on_start_execution do |task, event|
+    puts "Mary had a little lamb"
+    task.schedule_activity_task my_activity.to_activity_type, :input => { :my_param => 'value'}
+  end
+end
+```
+
+The task and event parameters are received from SWF. Unfortunately, you must still work within the constraints of the AWS SWF SDK. The ```SimplerWorkflow::Activity#to_activity_type``` generates the proper incantation used by SWF to identify and locate an activity.
+
+You can also define similar hooks for events using the following methods:
+
+* ```on_activity_completed``` is called when an activity completes and SWF reports back to the decision loop.
+* ```on_activity_failed``` is called when an activity reports a failure to SWF.
+
+
 
 ## Contributing
 
