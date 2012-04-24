@@ -12,9 +12,15 @@ module SimplerWorkflow
       self
     end
 
-    def Domain.[](domain_name)
+    def Domain.domains(domain_name, &block)
       @domains ||= {}
       @domains[domain_name] ||= Domain.new(domain_name)
+      @domains[domain_name].instance_eval(&block) if block
+      @domains[domain_name]
+    end
+
+    def Domain.[](domain_name)
+      Domain.domains(domain_name)
     end
 
     def register_workflow(name, version, &block)
