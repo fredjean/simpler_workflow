@@ -40,6 +40,20 @@ class. This declares a domain that does not retain workflow execution data:
 ```ruby
 domain = SimplerWorkflow::Domain["my-domain"]
 ```
+An other option is to use the ```domains``` method to get a handle on a domain and pass a block. This allows you to write the following code:
+
+```ruby
+domain = SimplerWorkflow::Domain.domains("my_domain") do
+  # Register activities
+  register_activity(:an_activity, '1.0.0') do
+    # See details below...
+  end
+  # Register workflow(s)
+  register_workflow(:a_workflow, '1.1.0') do
+    # See details below...
+  end
+end
+```
 
 You can also get a handle on a domain that retains information about workflow execution for 10 days with the following code:
 
