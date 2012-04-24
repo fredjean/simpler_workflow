@@ -169,9 +169,9 @@ You can also define similar hooks for events using the following methods:
 * ```on_activity_completed``` is called when an activity completes and SWF reports back to the decision loop.
 * ```on_activity_failed``` is called when an activity reports a failure to SWF.
 
-
-
 ## Contributing
+
+We welcome all kinds of contributions. This include code, fixes, issues, documentation, tests... Here's how you can contribute:
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
