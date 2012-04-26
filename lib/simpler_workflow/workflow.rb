@@ -6,7 +6,7 @@ module SimplerWorkflow
       Workflow.workflows[[name, version]] ||= begin
         default_options = {
           :default_task_list => name,
-          :default_task_start_to_close_timeout => 1 * 24 * 60 * 60,
+          :default_task_start_to_close_timeout => 2 * 60,
           :default_execution_start_to_close_timeout => 1 * 24 * 60 * 60,
           :default_child_policy => :terminate
         }
