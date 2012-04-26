@@ -7,7 +7,7 @@ module SimplerWorkflow
         default_options = {
           :default_task_list => name,
           :default_task_start_to_close_timeout => 1 * 60 * 60,
-          :default_task_schedule_to_start_timeout => 20,
+          :default_task_schedule_to_start_timeout => 5 * 60,
           :default_task_schedule_to_close_timeout => 1 * 60 * 60,
           :default_task_heartbeat_timeout => :none
         }
