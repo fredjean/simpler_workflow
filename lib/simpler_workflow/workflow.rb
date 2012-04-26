@@ -95,8 +95,9 @@ module SimplerWorkflow
       end
     end
 
-    def start_workflow(input)
-      domain.workflow_types[name.to_s, version].start_execution(:input => input)
+    def start_workflow(input, options = {})
+      options[:input] = input
+      domain.workflow_types[name.to_s, version].start_execution(options)
     end
 
     def on_start_execution(&block)
