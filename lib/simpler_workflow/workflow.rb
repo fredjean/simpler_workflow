@@ -7,7 +7,7 @@ module SimplerWorkflow
         default_options = {
           :default_task_list => name,
           :default_task_start_to_close_timeout => 2 * 60,
-          :default_execution_start_to_close_timeout => 1 * 24 * 60 * 60,
+          :default_execution_start_to_close_timeout => 2 * 60,
           :default_child_policy => :terminate
         }
         @options = default_options.merge(options)
@@ -39,6 +39,8 @@ module SimplerWorkflow
             activity_completed(decision_task, event)
           when 'ActivityTaskFailed'
             activity_failed(decision_task, event)
+          when 'ActivityTaskTimedOut'
+            activity_timed_out(decision_task, event)
           end
         end
       end
@@ -95,6 +97,21 @@ module SimplerWorkflow
       end
     end
 
+    def activity_timed_out(decision_task, event)
+      logger.info("Activity timed out.")
+      if @on_activity_timed_out && @on_activity_timed_out.respond_to?(:call)
+        @on_activity_timed_out.call(decision_task, event)
+      else
+        case event.attributes.timeoutType
+        when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
+          logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version} due to timeout.")
+          decisision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+        when 'HEARTBEAT'
+          decision_task.cancel_workflow_execution
+        end
+      end
+    end
+
     def start_workflow(input, options = {})
       options[:input] = input
       domain.workflow_types[name.to_s, version].start_execution(options)
@@ -110,6 +127,10 @@ module SimplerWorkflow
 
     def on_activity_failed(&block)
       @on_activity_failed = block
+    end
+
+    def on_activity_timed_out(&block)
+      @on_activity_timed_out = block
     end
 
     def self.[](name, version)
