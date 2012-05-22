@@ -4,18 +4,16 @@ module SimplerWorkflow
       domain_name = domain_name.to_s
       @domain = swf.domains[domain_name]
       unless swf.domains.include?(@domain)
-        @domain = swf.domains.create(domain_name, retention)
+        @domain = swf.domains.create(domain_name, retention) rescue @domain
       end
 
-      self.instance_eval(&block) if block
-
-      self
+      self.instance_eval(&block) if block_given?
     end
 
     def Domain.domains(domain_name, &block)
       @domains ||= {}
       @domains[domain_name] ||= Domain.new(domain_name)
-      @domains[domain_name].instance_eval(&block) if block
+      @domains[domain_name].instance_eval(&block) if block_given?
       @domains[domain_name]
     end
 
