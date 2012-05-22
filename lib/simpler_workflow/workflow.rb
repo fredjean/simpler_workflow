@@ -105,7 +105,7 @@ module SimplerWorkflow
         case event.attributes.timeoutType
         when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
           logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version} due to timeout.")
-          decisision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+          decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
         when 'HEARTBEAT'
           decision_task.cancel_workflow_execution
         end
