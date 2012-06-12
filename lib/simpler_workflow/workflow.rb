@@ -168,5 +168,9 @@ module SimplerWorkflow
     def last_input(decision_task, event)
       scheduled_event(decision_task, event).attributes.input
     end
+    
+    def logger
+      $logger || Rails.logger
+    end
   end
 end
