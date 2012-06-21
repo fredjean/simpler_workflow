@@ -3,7 +3,7 @@ module SimplerWorkflow
     def initialize(domain_name, retention = 2, &block)
       domain_name = domain_name.to_s
       @domain = swf.domains[domain_name]
-      unless swf.domains.include?(@domain)
+      unless @domain.exists?
         @domain = swf.domains.create(domain_name, retention) rescue @domain
       end
 

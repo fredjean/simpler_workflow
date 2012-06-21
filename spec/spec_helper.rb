@@ -4,8 +4,18 @@
 # loaded once.
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+#
+
+require 'simpler_workflow'
+require 'ruby-debug'
+
 RSpec.configure do |config|
   config.treat_symbols_as_metadata_keys_with_true_values = true
   config.run_all_when_everything_filtered = true
   config.filter_run :focus
+
+  config.before :each do
+    AWS.stub!
+    AWS.config(:access_key_id => 'TESTKEY', :secret_access_key => 'TESTSECRET')
+  end
 end
