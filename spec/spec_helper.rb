@@ -19,3 +19,7 @@ RSpec.configure do |config|
     AWS.config(:access_key_id => 'TESTKEY', :secret_access_key => 'TESTSECRET')
   end
 end
+
+def stub_list_domains
+
+end

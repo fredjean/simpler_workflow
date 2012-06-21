@@ -1,18 +1,18 @@
 module SimplerWorkflow
   class Domain
-    def initialize(domain_name, retention = 2, &block)
+    def initialize(domain_name, retention_period = 2, &block)
       domain_name = domain_name.to_s
       @domain = swf.domains[domain_name]
       unless @domain.exists?
-        @domain = swf.domains.create(domain_name, retention) rescue @domain
+        @domain = swf.domains.create(domain_name, retention_period) rescue @domain
       end
 
       self.instance_eval(&block) if block_given?
     end
 
-    def Domain.domains(domain_name, &block)
+    def Domain.domains(domain_name, retention_period = 2, &block)
       @domains ||= {}
-      @domains[domain_name] ||= Domain.new(domain_name)
+      @domains[domain_name] ||= Domain.new(domain_name, retention_period)
       @domains[domain_name].instance_eval(&block) if block_given?
       @domains[domain_name]
     end

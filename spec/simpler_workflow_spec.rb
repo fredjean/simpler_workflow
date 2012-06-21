@@ -1,11 +1,10 @@
 require 'spec_helper'
 
 describe SimplerWorkflow do
-
   let(:client) { AWS.config.simple_workflow_client }
 
   let(:describe_domain_response) { client.stub_for(:describe_domain) }
-  let(:list_domains_response) {client.stub_for(:list_domains)}
+  let(:list_domains_response) { client.stub_for(:list_domains) }
 
   let(:domain) { SimplerWorkflow.domain("test-domain") }
 
@@ -45,6 +44,17 @@ describe SimplerWorkflow do
 
     it "should show the default retention period" do
       domain.retention_period.should == 2
+    end
+  end
+
+  context "getting a handle to the SimpleWorkflow API" do
+    let(:swf) { SimplerWorkflow.swf }
+    it "should return the SWF handle" do
+      swf.should be_a AWS::SimpleWorkflow
+    end
+
+    it "should have the same configuration as AWS" do
+      swf.config.should == AWS.config
     end
   end
 end
