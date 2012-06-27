@@ -1,4 +1,5 @@
 require 'aws-sdk'
+require 'map'
 
 module SimplerWorkflow
   def SimplerWorkflow.domain(domain_name)
