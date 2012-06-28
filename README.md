@@ -1,6 +1,6 @@
 # SimplerWorkflow
 
-"!https://secure.travis-ci.org/SnuggHome/simpler_workflow.png!":http://travis-ci.org/SnuggHome/simpler_workflow
+!https://secure.travis-ci.org/SnuggHome/simpler_workflow.png!":http://travis-ci.org/SnuggHome/simpler_workflow
 
 A wrapper around Amazon's Simple Workflow Service meant to simplify declaring and using activities and workflow. Provides some sane defaults
 and work around some idiosyncracies of the platform.
