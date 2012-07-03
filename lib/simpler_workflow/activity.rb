@@ -92,6 +92,15 @@ module SimplerWorkflow
         end
       end
     end
+    
+    def poll_for_single_task
+      logger.info("Polling for single task for #{name}")
+      domain.activity_tasks.poll_for_single_task(name.to_s)
+    end
+    
+    def count
+      domain.activity_tasks.count(name).to_i
+    end
 
     def self.[](name, version = nil)
       case name
