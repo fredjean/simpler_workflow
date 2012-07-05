@@ -161,6 +161,7 @@ module SimplerWorkflow
     def scheduled_event(decision_task, event)
       decision_task.events.to_a[event.attributes.scheduled_event_id - 1]
     end
+
     def last_activity(decision_task, event)
       scheduled_event(decision_task, event).attributes.activity_type
     end
@@ -168,7 +169,7 @@ module SimplerWorkflow
     def last_input(decision_task, event)
       scheduled_event(decision_task, event).attributes.input
     end
-    
+
     def logger
       $logger || Rails.logger
     end
