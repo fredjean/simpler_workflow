@@ -8,6 +8,6 @@ module AWS
       end
     end
 
-    DecisionTask.send(:include, DecisionTaskAdditions)
+    DecisionTask.__send__(:include, DecisionTaskAdditions)
   end
 end
