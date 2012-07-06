@@ -159,7 +159,7 @@ module SimplerWorkflow
     end
 
     def scheduled_event(decision_task, event)
-      decision_task.events.to_a[event.attributes.scheduled_event_id - 1]
+      decision_task.scheduled_event(event)
     end
 
     def last_activity(decision_task, event)

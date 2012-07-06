@@ -1,4 +1,5 @@
 require 'aws-sdk'
+require 'aws/simple_workflow/decision_task_additions'
 require 'map'
 
 module SimplerWorkflow
