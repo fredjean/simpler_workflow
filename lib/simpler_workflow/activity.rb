@@ -1,5 +1,7 @@
 module SimplerWorkflow
   class Activity
+    include OptionsAsMethods
+
     attr_reader :domain, :name, :version, :options, :next_activity
 
     def initialize(domain, name, version, options = {})
@@ -17,14 +19,6 @@ module SimplerWorkflow
         @version = version
         @failure_policy = :abort
         self
-      end
-    end
-
-    def method_missing(meth_name, *args)
-      if @options.has_key?(meth_name.to_sym)
-        @options[meth_name.to_sym] = args[0]
-      else
-        super
       end
     end
 

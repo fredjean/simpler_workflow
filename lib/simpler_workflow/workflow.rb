@@ -1,5 +1,7 @@
 module SimplerWorkflow
   class Workflow
+    include OptionsAsMethods
+
     attr_reader :task_list, :domain, :name, :version, :options, :initial_activity_type
 
     def initialize(domain, name, version, options = {})
@@ -139,14 +141,6 @@ module SimplerWorkflow
 
     def self.register(name, version, workflow)
       workflows[[name, version]] = workflow
-    end
-
-    def method_missing(meth_name, *args)
-      if @options.has_key?(meth_name.to_sym)
-        @options[meth_name.to_sym] = args[0]
-      else
-        super
-      end
     end
 
     protected
