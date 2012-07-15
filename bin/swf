@@ -1,0 +1,142 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+# setup
+#
+  require 'fileutils'
+
+  script     = File.expand_path(__FILE__).gsub(%r|\breleases/\d+\b|, 'current')
+  script_dir = File.dirname(script)
+  rails_root = File.dirname(script_dir)
+
+  Dir.chdir(rails_root)
+
+  require File.join(rails_root, 'config', 'env.rb')
+
+  FileUtils.mkdir_p(File.join(rails_root, 'log', 'jobs'))
+  FileUtils.touch(File.join(rails_root, 'log', 'jobs', 'pid'))
+
+  %w(
+    BACKGROUND PIDFILE QUEUE VVERBOSE INTERVAL COUNT
+  ).each{|key| ENV.delete(key)}
+
+  quiet   = ARGV.delete('-q') || ARGV.delete('--quiet')
+  mode    = ARGV.shift || 'run'
+
+  pidfile = './log/jobs/pid'
+  pid     = Integer(IO.read(pidfile).strip) rescue nil
+  running = begin; Process.kill(0, pid); true; rescue Object; false; end
+
+# go
+#
+  case mode
+    when 'pid'
+      puts(pid) if running
+    
+    when 'run'
+      exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
+
+      ENV['PIDFILE']  = pidfile
+      ENV['QUEUE']    = 'jobs'
+      ENV['VVERBOSE'] = '1'
+      exec "rake environment resque:work"
+
+    when 'start'
+      exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
+
+      unless running
+        FileUtils.rm_f(pidfile)
+
+        pid = nil
+        a, b = IO.pipe
+        if fork
+          b.close
+          pid = Integer(a.read.strip)
+          a.close
+          puts(pid) unless quiet
+          exit
+        end
+        exit!(0) if fork
+        a.close
+        b.puts(Process.pid)
+        b.close
+
+        {
+          'stdin' => STDIN,
+          'stdout' => STDOUT,
+          'stderr' => STDERR,
+        }.each do |basename, io|
+          path = File.join("log/jobs/#{ basename }")
+          begin
+            open(path, 'a+'){|fd| io.reopen(fd)}
+          rescue
+            open(path, 'w+'){|fd| io.reopen(fd)}
+          end
+        end
+
+        Process.setsid rescue nil
+        File.umask(0) rescue nil
+
+        ENV['PIDFILE']  = pidfile
+        ENV['QUEUE']    = 'jobs'
+        ENV['VVERBOSE'] = '1' if ENV['RAILS_ENV'] != 'production'
+        exec "rake environment resque:work"
+      end
+
+    when 'stop'
+      if running
+        begin
+          Process.kill('-QUIT', pid)
+        rescue Errno::ESRCH
+          nil
+        end
+      end
+
+    when 'shutdown'
+      if running
+        alive = true
+
+        %w( QUIT TERM ).each do |signal|
+          begin
+            Process.kill(signal, pid)
+          rescue Errno::ESRCH
+            nil
+          end
+
+          42.times do
+            begin
+              alive = Process.kill(0, pid)
+              sleep(1 + rand) if alive
+            rescue Errno::ESRCH
+              alive = false
+              break
+            end
+          end
+
+          break unless alive
+        end
+
+        if alive
+          begin
+            Process.kill(-9, pid)
+            sleep(rand)
+          rescue Errno::ESRCH
+            nil
+          end
+        end
+      end
+
+    when 'restart'
+      exit! if fork
+      exit! if fork
+      system "#{ script } shutdown -q >/dev/null 2>&1"
+      exec "#{ script } start -q >/dev/null 2>&1"
+
+    when 'tail'
+      exec "tail -F ./log/jobs/*"
+
+    when 'pstree'
+      exec "pstree #{ pid }" if running
+  end
+  
+__END__
