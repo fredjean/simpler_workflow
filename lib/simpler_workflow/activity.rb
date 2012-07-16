@@ -62,7 +62,12 @@ module SimplerWorkflow
     end
 
     def start_activity_loop
-      Thread.new do
+      fork do
+
+        if SimplerWorkflow.after_fork
+          SimplerWorkflow.after_fork.call
+        end
+
         loop do
           begin
             logger.info("Starting activity_loop for #{name}")

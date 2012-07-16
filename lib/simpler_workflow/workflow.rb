@@ -29,25 +29,34 @@ module SimplerWorkflow
     end
 
     def decision_loop
-      logger.info("Starting decision loop for #{name.to_s}, #{version} listening to #{task_list}")
-      domain.decision_tasks.poll(task_list) do |decision_task|
-        logger.info("Received decision task")
-        decision_task.new_events.each do |event|
-          logger.info("Processing #{event.event_type}")
-          case event.event_type
-          when 'WorkflowExecutionStarted'
-            start_execution(decision_task, event)
-          when 'ActivityTaskCompleted'
-            activity_completed(decision_task, event)
-          when 'ActivityTaskFailed'
-            activity_failed(decision_task, event)
-          when 'ActivityTaskTimedOut'
-            activity_timed_out(decision_task, event)
+      fork do
+
+        if SimplerWorkflow.after_fork
+          SimplerWorkflow.after_fork.call
+        end
+
+        begin
+          logger.info("Starting decision loop for #{name.to_s}, #{version} listening to #{task_list}")
+          domain.decision_tasks.poll(task_list) do |decision_task|
+            logger.info("Received decision task")
+            decision_task.new_events.each do |event|
+              logger.info("Processing #{event.event_type}")
+              case event.event_type
+              when 'WorkflowExecutionStarted'
+                start_execution(decision_task, event)
+              when 'ActivityTaskCompleted'
+                activity_completed(decision_task, event)
+              when 'ActivityTaskFailed'
+                activity_failed(decision_task, event)
+              when 'ActivityTaskTimedOut'
+                activity_timed_out(decision_task, event)
+              end
+            end
           end
+        rescue Timeout::Error => e
+          retry
         end
       end
-    rescue Timeout::Error => e
-      retry
     end
 
     def task_list
