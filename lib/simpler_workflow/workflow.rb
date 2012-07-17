@@ -31,7 +31,8 @@ module SimplerWorkflow
     def decision_loop
       logger.info("Starting decision loop for #{name.to_s}, #{version} listening to #{task_list}")
       domain.decision_tasks.poll(task_list) do |decision_task|
-        logger.info("Received decision task")
+        start_time = DateTime.now
+        logger.info("Received decision task #{decision_task.id} at #{start_time}")
         decision_task.new_events.each do |event|
           logger.info("Processing #{event.event_type}")
           case event.event_type
@@ -45,6 +46,7 @@ module SimplerWorkflow
             activity_timed_out(decision_task, event)
           end
         end
+        logger.info("Completed Processing Decision Task #{decision_task.id} in #{DateTime.now - start_time} seconds.")
       end
     rescue Timeout::Error => e
       retry
