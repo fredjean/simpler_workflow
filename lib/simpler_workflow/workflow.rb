@@ -46,7 +46,7 @@ module SimplerWorkflow
             activity_timed_out(decision_task, event)
           end
         end
-        logger.info("Completed Processing Decision Task #{decision_task.id} in #{DateTime.now - start_time} seconds.")
+        logger.info("Completed Processing Decision Task #{decision_task.id} in #{((DateTime.now - start_time) * 24 * 60 * 60).to_i} seconds.")
       end
     rescue Timeout::Error => e
       retry
