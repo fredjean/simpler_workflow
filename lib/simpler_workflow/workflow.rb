@@ -33,6 +33,7 @@ module SimplerWorkflow
       domain.decision_tasks.poll(task_list) do |decision_task|
         start_time = DateTime.now
         logger.info("Received decision task #{decision_task.id} at #{start_time}")
+        decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
         decision_task.new_events.each do |event|
           logger.info("Processing #{event.event_type}")
           case event.event_type

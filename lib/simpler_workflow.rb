@@ -14,6 +14,10 @@ module SimplerWorkflow
     @swf ||= ::AWS::SimpleWorkflow.new
   end
 
+  def logger
+    $logger || Rails.logger
+  end
+
   autoload :Version,  'simpler_workflow/version'
   autoload :Domain,   'simpler_workflow/domain'
   autoload :Workflow, 'simpler_workflow/workflow'
