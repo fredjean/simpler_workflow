@@ -64,7 +64,7 @@ module SimplerWorkflow
     def start_activity_loop
       fork do
 
-        $0 = "SWF: #{name} #{version}"
+        $0 = "Activity: #{name} #{version}"
 
         if SimplerWorkflow.after_fork
           SimplerWorkflow.after_fork.call
