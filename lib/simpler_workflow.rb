@@ -14,6 +14,10 @@ module SimplerWorkflow
     @swf ||= ::AWS::SimpleWorkflow.new
   end
 
+  def logger
+    $logger || Rails.logger
+  end
+
   def after_fork(&block)
     block ? (@after_fork = block) : @after_fork
   end

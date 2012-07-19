@@ -32,7 +32,7 @@
   case mode
     when 'pid'
       puts(pid) if running
-    
+
     when 'run'
       exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
 
@@ -77,6 +77,8 @@
         Process.setsid rescue nil
         File.umask(0) rescue nil
 
+# This is where Resque is started...
+# Looks like a good place to load and run a task that launches a workflow...
         ENV['PIDFILE']  = pidfile
         ENV['QUEUE']    = 'jobs'
         ENV['VVERBOSE'] = '1' if ENV['RAILS_ENV'] != 'production'
