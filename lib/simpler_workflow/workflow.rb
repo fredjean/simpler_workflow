@@ -31,6 +31,8 @@ module SimplerWorkflow
     def decision_loop
       fork do
 
+        $0 = "SWF: #{name} #{version}"
+
         if SimplerWorkflow.after_fork
           SimplerWorkflow.after_fork.call
         end
