@@ -2,6 +2,8 @@ require 'aws-sdk'
 require 'aws/simple_workflow/decision_task_additions'
 require 'map'
 
+require 'simpler_workflow/tasks' if defined?(Rake)
+
 module SimplerWorkflow
   extend self
 
