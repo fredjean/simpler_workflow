@@ -40,6 +40,7 @@ module SimplerWorkflow
         begin
           logger.info("Starting decision loop for #{name.to_s}, #{version} listening to #{task_list}")
           domain.decision_tasks.poll(task_list) do |decision_task|
+            decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
             logger.info("Received decision task")
             decision_task.new_events.each do |event|
               logger.info("Processing #{event.event_type}")
