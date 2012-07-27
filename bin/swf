@@ -5,25 +5,20 @@
 #
   require 'fileutils'
 
-  script     = File.expand_path(__FILE__).gsub(%r|\breleases/\d+\b|, 'current')
-  script_dir = File.dirname(script)
-  rails_root = File.dirname(script_dir)
+  pwd        = ENV['PWD']
+  rails_root = pwd.gsub(%r|\breleases/\d+\b|, 'current')
 
   Dir.chdir(rails_root)
 
-  require File.join(rails_root, 'config', 'env.rb')
-
   FileUtils.mkdir_p(File.join(rails_root, 'log', 'workflow'))
   FileUtils.touch(File.join(rails_root, 'log', 'workflow', 'pid'))
-
-  %w(
-    BACKGROUND PIDFILE QUEUE VVERBOSE INTERVAL COUNT
-  ).each{|key| ENV.delete(key)}
 
   quiet   = ARGV.delete('-q') || ARGV.delete('--quiet')
   mode    = ARGV.shift || 'run'
 
   pidfile = './log/workflow/pid'
+  lockfile = File.open('./log/workflow/lock', "w")
+
   pid     = Integer(IO.read(pidfile).strip) rescue nil
   running = begin; Process.kill(0, pid); true; rescue Object; false; end
 
@@ -34,12 +29,12 @@
       puts(pid) if running
 
     when 'run'
-      exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
+      exit(42) unless lockfile.flock(File::LOCK_EX | File::LOCK_NB)
 
       exec "rake simpler_workflow:work"
 
     when 'start'
-      exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
+      exit(42) unless lockfile.flock(File::LOCK_EX | File::LOCK_NB)
 
       unless running
         FileUtils.rm_f(pidfile)
@@ -63,7 +58,7 @@
           'stdout' => STDOUT,
           'stderr' => STDERR,
         }.each do |basename, io|
-          path = File.join("log/simpler_workflow/#{ basename }")
+          path = File.join("log/workflow/#{ basename }")
           begin
             open(path, 'a+'){|fd| io.reopen(fd)}
           rescue
@@ -134,5 +129,6 @@
     when 'pstree'
       exec "pstree #{ pid }" if running
   end
-  
+
 __END__
+
