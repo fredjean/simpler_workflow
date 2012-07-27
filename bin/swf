@@ -13,8 +13,8 @@
 
   require File.join(rails_root, 'config', 'env.rb')
 
-  FileUtils.mkdir_p(File.join(rails_root, 'log', 'jobs'))
-  FileUtils.touch(File.join(rails_root, 'log', 'jobs', 'pid'))
+  FileUtils.mkdir_p(File.join(rails_root, 'log', 'workflow'))
+  FileUtils.touch(File.join(rails_root, 'log', 'workflow', 'pid'))
 
   %w(
     BACKGROUND PIDFILE QUEUE VVERBOSE INTERVAL COUNT
@@ -23,7 +23,7 @@
   quiet   = ARGV.delete('-q') || ARGV.delete('--quiet')
   mode    = ARGV.shift || 'run'
 
-  pidfile = './log/jobs/pid'
+  pidfile = './log/workflow/pid'
   pid     = Integer(IO.read(pidfile).strip) rescue nil
   running = begin; Process.kill(0, pid); true; rescue Object; false; end
 
@@ -36,10 +36,7 @@
     when 'run'
       exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
 
-      ENV['PIDFILE']  = pidfile
-      ENV['QUEUE']    = 'jobs'
-      ENV['VVERBOSE'] = '1'
-      exec "rake environment resque:work"
+      exec "rake simpler_workflow:work"
 
     when 'start'
       exit(42) unless DATA.flock(File::LOCK_EX | File::LOCK_NB)
@@ -66,7 +63,7 @@
           'stdout' => STDOUT,
           'stderr' => STDERR,
         }.each do |basename, io|
-          path = File.join("log/jobs/#{ basename }")
+          path = File.join("log/simpler_workflow/#{ basename }")
           begin
             open(path, 'a+'){|fd| io.reopen(fd)}
           rescue
@@ -77,12 +74,9 @@
         Process.setsid rescue nil
         File.umask(0) rescue nil
 
-# This is where Resque is started...
+# This is where simpler_workflow is started...
 # Looks like a good place to load and run a task that launches a workflow...
-        ENV['PIDFILE']  = pidfile
-        ENV['QUEUE']    = 'jobs'
-        ENV['VVERBOSE'] = '1' if ENV['RAILS_ENV'] != 'production'
-        exec "rake environment resque:work"
+        exec "rake simpler_workflow:work"
       end
 
     when 'stop'
@@ -135,7 +129,7 @@
       exec "#{ script } start -q >/dev/null 2>&1"
 
     when 'tail'
-      exec "tail -F ./log/jobs/*"
+      exec "tail -F ./log/workflow/*"
 
     when 'pstree'
       exec "pstree #{ pid }" if running
