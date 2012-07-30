@@ -29,35 +29,54 @@ module SimplerWorkflow
     end
 
     def decision_loop
-      fork do
+      SimplerWorkflow.child_processes << fork do
 
         $0 = "Workflow: #{name} #{version}"
+
+        Signal.trap('QUIT') do
+          logger.info("Received SIGQUIT")
+          @time_to_exit = true
+        end
+
+        Signal.trap('INT') do 
+          logger.info("Received SIGINT")
+          Process.exit!(0)
+        end
 
         if SimplerWorkflow.after_fork
           SimplerWorkflow.after_fork.call
         end
 
-        begin
-          logger.info("Starting decision loop for #{name.to_s}, #{version} listening to #{task_list}")
-          domain.decision_tasks.poll(task_list) do |decision_task|
-            decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
-            logger.info("Received decision task")
-            decision_task.new_events.each do |event|
-              logger.info("Processing #{event.event_type}")
-              case event.event_type
-              when 'WorkflowExecutionStarted'
-                start_execution(decision_task, event)
-              when 'ActivityTaskCompleted'
-                activity_completed(decision_task, event)
-              when 'ActivityTaskFailed'
-                activity_failed(decision_task, event)
-              when 'ActivityTaskTimedOut'
-                activity_timed_out(decision_task, event)
+
+        loop do
+          begin
+            logger.info("Waiting for a decision task for #{name.to_s}, #{version} listening to #{task_list}")
+            domain.decision_tasks.poll_for_single_task(task_list) do |decision_task|
+              decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
+              logger.info("Received decision task")
+              decision_task.new_events.each do |event|
+                logger.info("Processing #{event.event_type}")
+                case event.event_type
+                when 'WorkflowExecutionStarted'
+                  start_execution(decision_task, event)
+                when 'ActivityTaskCompleted'
+                  activity_completed(decision_task, event)
+                when 'ActivityTaskFailed'
+                  activity_failed(decision_task, event)
+                when 'ActivityTaskTimedOut'
+                  activity_timed_out(decision_task, event)
+                end
               end
             end
+            Process.exit 0 if @time_to_exit
+          rescue Timeout::Error => e
+            if @time_to_exit
+              Process.exit 0
+            else
+              retry
+            end
           end
-        rescue Timeout::Error => e
-          retry
+          nil
         end
       end
     end

@@ -26,6 +26,10 @@ module SimplerWorkflow
 
   attr_writer :after_fork
 
+  def child_processes
+    @child_processes ||= []
+  end
+
   autoload :Version,  'simpler_workflow/version'
   autoload :Domain,   'simpler_workflow/domain'
   autoload :Workflow, 'simpler_workflow/workflow'

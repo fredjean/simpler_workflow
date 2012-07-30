@@ -1,11 +1,14 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
+# Mostly based on @ahoward's https://gist.github.com/3098500 with a few fixes and
+# adjustments.
 
 # setup
 #
   require 'fileutils'
 
   pwd        = ENV['PWD']
+  script     = File.expand_path(__FILE__).gsub(%r|\breleases/\d+\b|, 'current')
   rails_root = pwd.gsub(%r|\breleases/\d+\b|, 'current')
 
   Dir.chdir(rails_root)
@@ -46,6 +49,7 @@
           pid = Integer(a.read.strip)
           a.close
           puts(pid) unless quiet
+          File.open(pidfile, "w") { |f| f.write(pid) }
           exit
         end
         exit!(0) if fork
@@ -69,15 +73,13 @@
         Process.setsid rescue nil
         File.umask(0) rescue nil
 
-# This is where simpler_workflow is started...
-# Looks like a good place to load and run a task that launches a workflow...
         exec "rake simpler_workflow:work"
       end
 
     when 'stop'
       if running
         begin
-          Process.kill('-QUIT', pid)
+          Process.kill('QUIT', pid)
         rescue Errno::ESRCH
           nil
         end

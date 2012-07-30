@@ -62,9 +62,20 @@ module SimplerWorkflow
     end
 
     def start_activity_loop
-      fork do
+      SimplerWorkflow.child_processes << fork do
 
         $0 = "Activity: #{name} #{version}"
+
+        Signal.trap('QUIT') do
+          logger.info("Received SIGQUIT")
+          @time_to_exit = true
+        end
+
+        Signal.trap('INT') do 
+          logger.info("Received SIGINT")
+          Process.exit!(0)
+        end
+
 
         if SimplerWorkflow.after_fork
           SimplerWorkflow.after_fork.call
@@ -73,7 +84,7 @@ module SimplerWorkflow
         loop do
           begin
             logger.info("Starting activity_loop for #{name}")
-            domain.activity_tasks.poll(name.to_s) do |task|
+            domain.activity_tasks.poll_for_single_task(name.to_s) do |task|
               logger.info("Received task...")
               perform_task(task)
               unless task.responded?
@@ -85,7 +96,13 @@ module SimplerWorkflow
                 end
               end
             end
-          rescue Timeout::Error => e
+            Process.exit(0) if @time_to_exit
+          rescue Timeout::Error
+            if @time_to_exit
+              Process.exit(0)
+            else
+              retry
+            end
           rescue => e
             logger.error(e.message)
             logger.error(e.backtrace.join("\n"))

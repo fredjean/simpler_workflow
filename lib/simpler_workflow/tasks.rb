@@ -9,6 +9,20 @@ namespace :simpler_workflow do
   task :work => [:preload, :setup] do
     require 'simpler_workflow'
 
+    Signal.trap('QUIT') do
+      SimplerWorkflow.child_processes.each do |child|
+        Process.kill('QUIT', child)
+      end
+      exit(0)
+    end
+
+    Signal.trap('INT') do
+      SimplerWorkflow.child_processes.each do |child|
+        Process.kill('INT', child)
+      end
+      exit(0)
+    end
+
     pattern = ENV['WORKFLOW'] || 'lib/workflow/*.rb'
 
     FileList.new(pattern).each do |f|
