@@ -7,25 +7,33 @@ require 'simpler_workflow/tasks' if defined?(Rake)
 module SimplerWorkflow
   extend self
 
+  # Provides a handle to a domain.
   def domain(domain_name)
     @domains ||= {}
     @domains[domain_name.to_sym] ||= Domain.new(domain_name)
   end
 
+  # Provides a handle to the SimpleWorkflow underlying service.
   def swf
     @swf ||= ::AWS::SimpleWorkflow.new
   end
 
+  # The logger used. Falls back to the Rails logger.
   def logger
     $logger || Rails.logger
   end
 
+  # Sets the code to be called after a process fork when a block is provided.
+  # Returns the previously set block (or nil) otherwise.
+  #
+  # @param block The block that will be called after a process is forked.
+  # @return Proc the block that was passed earlier (or nil)
   def after_fork(&block)
     block ? (@after_fork = block) : @after_fork
   end
-
   attr_writer :after_fork
 
+  # The list of child processes that have been forked from the main process.
   def child_processes
     @child_processes ||= []
   end
