@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["fred@snugghome.com"]
   gem.description   = %q{A wrapper around Amazon's Simple Workflow Service}
   gem.summary       = %q{A wrapper and DSL around Amazon's Simple Workflow Service with the goal of making it almost pleasant to define workflows.}
-  gem.homepage      = "https://github.com/SnuggHome/simpler_workflow"
+  gem.homepage      = "https://github.com/fredjean/simpler_workflow"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
