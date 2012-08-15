@@ -90,7 +90,9 @@ end
 my_activity.start_activity_loop
 ```
 
-The activity manages a loop that waits for messages from SWF.
+The activity manages a loop that waits for messages from SWF. It runs
+under it's own sub-process to make it easier to manage and isolate each
+of the activities.
 
 Activities are passed a task parameter. This parameter is provided to the activity by SWF and provides a lot of information about the task
 at end. One item passed is the input attribute.
@@ -150,6 +152,9 @@ The next step is to start the decision loop:
 my_workflow.decision_loop
 ```
 
+The decision loop will be launched in it's own sub-process and will
+proceed to poll SWF for decision tasks.
+
 #### Customizing the workflow
 
 There are hooks for different section of the decision loop. You can specify what happens when the workflow is started with the ```on_start_execution```
@@ -181,6 +186,16 @@ Here are a few recommendations on when to change the version of a workflow or ac
 1. You need to bump the version when you are changing the defaults associated with an activity or workflow. These are set using the ```default_``` methods. The defaults are commnicated to AWS when the workflow or activity is registered. It does not get updated when they are changed within the code.
 2. You may want to bump a version if you have work in progress under an existing workflow and you need to introduce changes for new work. You will need to keep the older activity and or workflow around while it completes.
 3. You do not need to bump the version when you change the work performed by the activity or the decision loop itself. This is code that is directly managed by SimplerWorkflow and isn't communicated to AWS. This only works if you do not want previous workflows to finish using the previous version of the code though.
+
+## Running Workflows
+
+There is a new Rake task called ```simpler_workflow:work``` that will
+look for workflows located under the ```lib/workflow``` directory. This
+makes it much easier to put together a few workflow and manage them.
+
+Another addition in 0.2.0 is the swf command. This command provides a
+script that starts and stops the workflows and provide other monitoring
+tools.
 
 ## Contributing
 
