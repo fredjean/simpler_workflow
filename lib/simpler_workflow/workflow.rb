@@ -31,23 +31,32 @@ module SimplerWorkflow
     def decision_loop
       logger.info("Starting decision loop for #{name.to_s}, #{version} listening to #{task_list}")
       domain.decision_tasks.poll(task_list) do |decision_task|
-        start_time = DateTime.now
-        logger.info("Received decision task #{decision_task.id} at #{start_time}")
-        decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
-        decision_task.new_events.each do |event|
-          logger.info("Processing #{event.event_type}")
-          case event.event_type
-          when 'WorkflowExecutionStarted'
-            start_execution(decision_task, event)
-          when 'ActivityTaskCompleted'
-            activity_completed(decision_task, event)
-          when 'ActivityTaskFailed'
-            activity_failed(decision_task, event)
-          when 'ActivityTaskTimedOut'
-            activity_timed_out(decision_task, event)
+        begin
+          start_time = DateTime.now
+          logger.info("Received decision task #{decision_task.id} at #{start_time}")
+          decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
+          decision_task.new_events.each do |event|
+            logger.info("Processing #{event.event_type}")
+            case event.event_type
+            when 'WorkflowExecutionStarted'
+              start_execution(decision_task, event)
+            when 'ActivityTaskCompleted'
+              activity_completed(decision_task, event)
+            when 'ActivityTaskFailed'
+              activity_failed(decision_task, event)
+            when 'ActivityTaskTimedOut'
+              activity_timed_out(decision_task, event)
+            end
           end
+        rescue => e
+          context = {
+            :workflow_execution => decision_task.workflow_execution,
+            :workflow => to_workflow_type,
+            :decision_task => decision_task
+          }
+          SimplerWorkflow.exception_reporter.report(e, context)
+          raise e
         end
-        logger.info("Completed Processing Decision Task #{decision_task.id} in #{((DateTime.now - start_time) * 24 * 60 * 60).to_i} seconds.")
       end
     rescue Timeout::Error => e
       retry
@@ -115,6 +124,10 @@ module SimplerWorkflow
           decision_task.cancel_workflow_execution
         end
       end
+    end
+
+    def to_workflow_type
+      { :name => name, :version => version }
     end
 
     def start_workflow(input, options = {})
