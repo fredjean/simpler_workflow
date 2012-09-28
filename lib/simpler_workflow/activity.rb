@@ -52,8 +52,10 @@ module SimplerWorkflow
       logger.info("Performing task #{name}")
       @perform_task.call(task)
     rescue => e
-      logger.error e.message
-      logger.error e.backtrace.join("\n")
+      context = to_activity_type
+      context[:input] = task.input
+      context[:activity_id] = task.activity_id
+      SimplerWorkflow.exception_reporter.report(e, context)
       task.fail! :reason => e.message[0..250], :details => {:failure_policy => failure_policy}.to_json
     end
 
@@ -104,8 +106,11 @@ module SimplerWorkflow
               retry
             end
           rescue => e
-            logger.error(e.message)
-            logger.error(e.backtrace.join("\n"))
+            context = to_activity_type
+            context[:input] = task.input
+            context[:activity_id] = task.activity_id
+            SimplerWorkflow.exception_reporter.report(e, context)
+            raise e
           end
         end
       end

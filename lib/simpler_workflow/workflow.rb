@@ -75,8 +75,15 @@ module SimplerWorkflow
             else
               retry
             end
+          rescue => e
+            context = {
+              :workflow_execution => decision_task.workflow_execution,
+              :workflow => to_workflow_type,
+              :decision_task => decision_task
+            }
+            SimplerWorkflow.exception_reporter.report(e, context)
+            raise e
           end
-          nil
         end
       end
     end
@@ -143,6 +150,10 @@ module SimplerWorkflow
           decision_task.cancel_workflow_execution
         end
       end
+    end
+
+    def to_workflow_type
+      { :name => name, :version => version }
     end
 
     def start_workflow(input, options = {})

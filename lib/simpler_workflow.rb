@@ -38,11 +38,24 @@ module SimplerWorkflow
     @child_processes ||= []
   end
 
+  def exception_reporter(&block)
+    if block_given?
+      @exception_reporter = DefaultExceptionReporter.new(&block)
+    end
+
+    @exception_reporter || DefaultExceptionReporter.new
+  end
+
+  def exception_reporter=(exception_handler)
+    @exception_reporter = exception_handler
+  end
+
   autoload :Version,  'simpler_workflow/version'
   autoload :Domain,   'simpler_workflow/domain'
   autoload :Workflow, 'simpler_workflow/workflow'
   autoload :Activity, 'simpler_workflow/activity'
   autoload :OptionsAsMethods, 'simpler_workflow/options_as_methods'
+  autoload :DefaultExceptionReporter, 'simpler_workflow/default_exception_reporter'
 end
 
 class Map
