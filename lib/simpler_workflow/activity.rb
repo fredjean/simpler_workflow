@@ -107,7 +107,8 @@ module SimplerWorkflow
               retry
             end
           rescue => e
-            context = to_activity_type
+            context = {}
+            context[:activity_type] = [name.to_s, version]
             context[:input] = task.input
             context[:activity_id] = task.activity_id
             SimplerWorkflow.exception_reporter.report(e, context)
