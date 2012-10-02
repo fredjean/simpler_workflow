@@ -70,25 +70,28 @@ module SimplerWorkflow
           begin
             logger.info("Starting activity_loop for #{name}")
             domain.activity_tasks.poll(name.to_s) do |task|
-              logger.info("Received task...")
-              perform_task(task)
-              unless task.responded?
-                if next_activity
-                  result = {:next_activity => next_activity}.to_json
-                  task.complete!(:result => result)
-                else
-                  task.complete!
+              begin
+                logger.info("Received task...")
+                perform_task(task)
+                unless task.responded?
+                  if next_activity
+                    result = {:next_activity => next_activity}.to_json
+                    task.complete!(:result => result)
+                  else
+                    task.complete!
+                  end
                 end
+              rescue => e
+                context = {}
+                context[:activity_type] = [name.to_s, version]
+                context[:input] = task.input
+                context[:activity_id] = task.activity_id
+                SimplerWorkflow.exception_reporter.report(e, context)
+                task.fail! :reason => e.message, :details => { :failure_policy => :abort }.to_json unless task.responded?
               end
             end
           rescue Timeout::Error => e
-          rescue => e
-            context = {}
-            context[:activity_type] = [name.to_s, version]
-            context[:input] = task.input
-            context[:activity_id] = task.activity_id
-            SimplerWorkflow.exception_reporter.report(e, context)
-            raise e
+            retry
           end
         end
       end
