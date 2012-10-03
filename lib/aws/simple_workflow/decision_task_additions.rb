@@ -4,7 +4,7 @@ module AWS
   class SimpleWorkflow
     module DecisionTaskAdditions
       def scheduled_event(event)
-        events.reverse_order.find { |e| e.id == event.attributes.scheduled_event_id }
+        workflow_execution.events.reverse_order.find { |e| e.id == event.attributes.scheduled_event_id }
       end
     end
   end
