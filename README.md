@@ -197,6 +197,31 @@ Another addition in 0.2.0 is the swf command. This command provides a
 script that starts and stops the workflows and provide other monitoring
 tools.
 
+## Reporting Errors
+
+We now log exceptions and errors that occur while running activities or
+handling decision tasks. The default strategy is to log the errors, but
+it is easy to plug in a custom strategy. This is how you can plug in a
+strategy in a Rails initializer:
+
+```ruby
+module SimplerWorkflow
+  unless Rails.env.development?
+    exception_reporter do |e, context|
+      Exceptional.context(context)
+      Exceptional.handle(e)
+    end
+  end
+end
+```
+
+The block passed to the ```exception_reporter``` method will receive the
+exception and the context that has been computed from the activity or
+decition task.
+
+This has been extremely helpful in tracking down and fixing errors
+within a workflow that was failing quietly.
+
 ## Contributing
 
 We welcome all kinds of contributions. This include code, fixes, issues, documentation, tests... Here's how you can contribute:
