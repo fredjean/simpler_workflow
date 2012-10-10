@@ -27,7 +27,7 @@ EOM
   gem.require_paths = ["lib"]
   gem.version       = SimplerWorkflow::VERSION
 
-  gem.add_dependency 'aws-sdk', '~> 1.5.0'
+  gem.add_dependency 'aws-sdk', '~> 1.6.0'
   gem.add_dependency 'map'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
