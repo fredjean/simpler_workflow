@@ -17,7 +17,7 @@ module SimplerWorkflow
         @domain = domain
         @name = name
         @version = version
-        @failure_policy = :abort
+        @failure_policy = :fail
         self
       end
     end
@@ -41,7 +41,7 @@ module SimplerWorkflow
     end
 
     def failure_policy
-      @failure_policy || :abort
+      @failure_policy || :fail
     end
 
     def perform_activity(&block)
@@ -105,7 +105,7 @@ module SimplerWorkflow
                 context[:input] = task.input
                 context[:activity_id] = task.activity_id
                 SimplerWorkflow.exception_reporter.report(e, context)
-                task.fail! :reason => e.message, :details => { :failure_policy => :abort }.to_json unless task.responded?
+                task.fail! :reason => e.message, :details => { :failure_policy => :fail }.to_json unless task.responded?
               end
             end
             Process.exit(0) if @time_to_exit
