@@ -10,13 +10,11 @@ module SimplerWorkflow
     end
 
     def report(e, context = {})
-      if reporter
-        reporter.call(e, context)
-      else
-        SimplerWorkflow.logger.error("[#{tag}] Exception: #{e.message}")
-        SimplerWorkflow.logger.error("[#{tag}] Context: #{context.inspect}") unless context.empty?
-        SimplerWorkflow.logger.error("[#{tag}] Backtrace:\n#{e.backtrace.join("\n")}")
-      end
+      reporter.call(e, context) if reporter
+    ensure
+      SimplerWorkflow.logger.error("[#{tag}] Exception: #{e.message}")
+      SimplerWorkflow.logger.error("[#{tag}] Context: #{context.inspect}") unless context.empty?
+      SimplerWorkflow.logger.error("[#{tag}] Backtrace:\n#{e.backtrace.join("\n")}")
     end
 
     def tag
