@@ -47,26 +47,11 @@ module SimplerWorkflow
           SimplerWorkflow.after_fork.call
         end
 
-
         loop do
           begin
             logger.info("Waiting for a decision task for #{name.to_s}, #{version} listening to #{task_list}")
             domain.decision_tasks.poll_for_single_task(task_list) do |decision_task|
-              decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
-              logger.info("Received decision task")
-              decision_task.new_events.each do |event|
-                logger.info("Processing #{event.event_type}")
-                case event.event_type
-                when 'WorkflowExecutionStarted'
-                  start_execution(decision_task, event)
-                when 'ActivityTaskCompleted'
-                  activity_completed(decision_task, event)
-                when 'ActivityTaskFailed'
-                  activity_failed(decision_task, event)
-                when 'ActivityTaskTimedOut'
-                  activity_timed_out(decision_task, event)
-                end
-              end
+              handle_decision_task(decision_task)
             end
             Process.exit 0 if @time_to_exit
           rescue Timeout::Error => e
@@ -92,68 +77,6 @@ module SimplerWorkflow
       @options[:default_task_list][:name].to_s
     end
 
-    def start_execution(decision_task, event)
-      logger.info "Starting the execution of the job."
-      if @on_start_execution && @on_start_execution.respond_to?(:call)
-        @on_start_execution.call(decision_task, event)
-      else
-        decision_task.schedule_activity_task initial_activity_type, :input => event.attributes.input
-      end
-    end
-
-    def activity_completed(decision_task, event)
-      if @on_activity_completed && @on_activity_completed.respond_to?(:call)
-        @on_activity_completed.call(decision_task, event)
-      else
-        if event.attributes.keys.include?(:result)
-          result = Map.from_json(event.attributes.result)
-          next_activity = result[:next_activity]
-          activity_type = domain.activity_types[next_activity[:name], next_activity[:version]]
-          decision_task.schedule_activity_task activity_type, :input => scheduled_event(decision_task, event).attributes.input
-        else
-          logger.info("Workflow #{name}, #{version} completed")
-          decision_task.complete_workflow_execution :result => 'success'
-        end
-      end
-    end
-
-    def activity_failed(decision_task, event)
-      logger.info("Activity failed.")
-      if @on_activity_failed && @on_activity_failed.respond_to?(:call)
-        @on_activity_failed.call(decision_task, event)
-      else
-        if event.attributes.keys.include?(:details)
-          details = Map.from_json(event.attributes.details)
-          case details.failure_policy.to_sym
-          when :abort, :cancel
-            decision_task.cancel_workflow_execution
-          when :fail
-            decision_task.fail_workflow_execution
-          when :retry
-            logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
-            decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
-          end
-        else
-          decision_task.cancel_workflow_execution
-        end
-      end
-    end
-
-    def activity_timed_out(decision_task, event)
-      logger.info("Activity timed out.")
-      if @on_activity_timed_out && @on_activity_timed_out.respond_to?(:call)
-        @on_activity_timed_out.call(decision_task, event)
-      else
-        case event.attributes.timeoutType
-        when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
-          logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version} due to timeout.")
-          decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
-        when 'HEARTBEAT'
-          decision_task.cancel_workflow_execution
-        end
-      end
-    end
-
     def to_workflow_type
       { :name => name, :version => version }
     end
@@ -164,19 +87,19 @@ module SimplerWorkflow
     end
 
     def on_start_execution(&block)
-      @on_start_execution = block
+      event_handlers['WorkflowExecutionStarted'] = WorkflowEventHandler.new(&block)
     end
 
     def on_activity_completed(&block)
-      @on_activity_completed = block
+      event_handler['ActivityTaskCompleted'] = WorkflowEventHandler.new(&block)
     end
 
     def on_activity_failed(&block)
-      @on_activity_failed = block
+      event_handler['ActivityTaskFailed'] = WorkflowEventHandler.new(&block)
     end
 
     def on_activity_timed_out(&block)
-      @on_activity_timed_out = block
+      event_handler['ActivityTaskTimedOut'] = WorkflowEventHandler.new(&block)
     end
 
     def self.[](name, version)
@@ -209,7 +132,123 @@ module SimplerWorkflow
     end
 
     def logger
-      $logger || Rails.logger
+      SimplerWorkflow.logger
+    end
+
+    def handle_decision_task(decision_task)
+      decision_task.extend AWS::SimpleWorkflow::DecisionTaskAdditions
+      logger.info("Received decision task")
+      decision_task.new_events.each do |event|
+        logger.info("Processing #{event.event_type}")
+        event_handlers[event.event_type].process
+      end
+    end
+
+    def event_handlers
+      # TODO: Create classes instead of using blocks. This is not good... 
+      @event_handlers ||= {
+        'WorkflowExecutionStarted' => WorkflowExecutionStartedHandler.new(self),
+        'ActivityTaskCompleted' => ActivityTaskCompletedHandler.new(self),
+        'ActivityTaskFailed' => ActivityTaskFailedHandler.new(self),
+        'ActivityTaskTimedOut' => ActivityTaskTimedOutHandler.new(self)
+      }
+    end
+
+    class WorkflowEventHandler
+      attr_accessor :handler
+
+      def initialize(&block)
+        @handler = block
+      end
+
+      def process(decision_task, event)
+        handler.call(decision_task, event)
+      end
+    end
+    
+    class ActivityTaskTimedOutHandler
+      attr_accessor :workflow
+
+      def initialize(workflow)
+        @workflow = workflow
+      end
+
+      def process(decision_task, event)
+        case event.attributes.timeoutType
+        when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
+          logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version} due to timeout.")
+          decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+        when 'HEARTBEAT'
+          decision_task.cancel_workflow_execution
+        end
+      end
+    end
+
+    class ActivityTaskFailedHandler
+      attr_accessor :workflow
+
+      def initialize(workflow)
+        @workflow = workflow
+      end
+
+      def process(decision_task, event)
+        if event.attributes.keys.include?(:details)
+          details = Map.from_json(event.attributes.details)
+          case details.failure_policy.to_sym
+          when :abort, :cancel
+            decision_task.cancel_workflow_execution
+          when :fail
+            decision.task.fail_workflow_execution
+          when :retry
+            logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
+            decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+          end
+        else
+          decision_task.fail_workflow_execution
+        end
+      end
+    end
+
+    class ActivityTaskCompletedHandler
+      attr_accessor :workflow
+
+      def initialize(workflow)
+        @workflow = workflow
+      end
+
+      def process(decision_task, event)
+        if event.attributes.keys.include?(:result)
+          result = Map.from_json(event.attributes.result)
+          next_activity = result[:next_activity]
+          activity_type = domain.activity_types[next_activity[:name], next_activity[:version]]
+          decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
+        else
+          logger.info("Workflow #{name}, #{version} completed")
+          decision_task.complete_workflow_execution result: 'success'
+        end
+      end
+
+      protected
+      def scheduled_event(*args)
+        workflow.scheduled_event(*args)
+      end
+    end
+
+    class WorkflowExecutionStartedHandler
+      attr_accessor :workflow
+
+      def initialize(workflow)
+        @workflow = workflow
+      end
+
+      def process(decision_task, event)
+        decision_task.schedule_activity_task initial_activity_type, input: event.attributes.input
+      end
+
+      protected
+      def initial_activity_type
+        workflow.initial_activity_type
+      end
     end
   end
 end

@@ -7,6 +7,8 @@
 #
 
 require 'simpler_workflow'
+require 'aws/simple_workflow'
+require 'pry'
 
 RSpec.configure do |config|
   config.treat_symbols_as_metadata_keys_with_true_values = true
@@ -19,6 +21,11 @@ RSpec.configure do |config|
   end
 end
 
+class SimplerWorkflow::Workflow::WorkflowEventHandler
+  def workflow_event_handler?
+    is_a?(SimplerWorkflow::Workflow::WorkflowEventHandler)
+  end
+end
 def stub_list_domains
 
 end

@@ -33,4 +33,6 @@ EOM
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
   gem.add_development_dependency 'travis-lint'
+  gem.add_development_dependency 'pry'
+  gem.add_development_dependency 'pry-nav'
 end
