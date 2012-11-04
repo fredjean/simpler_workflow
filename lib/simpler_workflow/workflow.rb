@@ -145,13 +145,12 @@ module SimplerWorkflow
     end
 
     def event_handlers
-      # TODO: Create classes instead of using blocks. This is not good... 
-      @event_handlers ||= {
-        'WorkflowExecutionStarted' => WorkflowExecutionStartedHandler.new(self),
-        'ActivityTaskCompleted' => ActivityTaskCompletedHandler.new(self),
-        'ActivityTaskFailed' => ActivityTaskFailedHandler.new(self),
-        'ActivityTaskTimedOut' => ActivityTaskTimedOutHandler.new(self)
-      }
+      @event_handlers ||= Map[
+        :WorkflowExecutionStarted , WorkflowExecutionStartedHandler.new(self) , 
+        :ActivityTaskCompleted    , ActivityTaskCompletedHandler.new(self)    , 
+        :ActivityTaskFailed       , ActivityTaskFailedHandler.new(self)       , 
+        :ActivityTaskTimedOut     , ActivityTaskTimedOutHandler.new(self)
+        ]
     end
 
     class WorkflowEventHandler
@@ -165,7 +164,7 @@ module SimplerWorkflow
         handler.call(decision_task, event)
       end
     end
-    
+
     class ActivityTaskTimedOutHandler
       attr_accessor :workflow
 
@@ -181,6 +180,15 @@ module SimplerWorkflow
         when 'HEARTBEAT'
           decision_task.cancel_workflow_execution
         end
+      end
+
+      protected
+      def last_activity(*args)
+        workflow.last_activity(*args)
+      end
+
+      def last_input(*args)
+        workflow.last_input(*args)
       end
     end
 

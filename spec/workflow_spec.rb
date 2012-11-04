@@ -57,8 +57,19 @@ module SimplerWorkflow
             handler.class.name.should == "SimplerWorkflow::Workflow::#{event}Handler"
           end
         end
+
+				it "should start a workflow based on the declared initial activity" do
+					workflow.initial_activity :test_activity, '1.0.0'
+
+					workflow.send(:initial_activity_type).should == domain.activity_types[:test_activity, '1.0.0']
+
+					event = stub( :attributes => stub( :input => "Mary had a little lamb"))
+					decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+					decision_task.should_receive(:schedule_activity_task).with(domain.activity_types[:test_activity, '1.0.0'], input: event.attributes.input)
+
+					event_handlers[:WorkflowExecutionStarted].process(decision_task, event)
+				end
       end
     end
-
   end
 end
