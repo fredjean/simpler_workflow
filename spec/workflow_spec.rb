@@ -6,6 +6,8 @@ module SimplerWorkflow
     let(:describe_domain_response) { client.stub_for(:describe_domain) }
     let(:list_domains_response) { client.stub_for(:list_domains) }
 
+    let(:decision_task) { mock(AWS::SimpleWorkflow::DecisionTask) }
+
     let(:domain) { SimplerWorkflow.domain('test-domain') }
 
     let(:domain_desc) {{
@@ -63,13 +65,13 @@ module SimplerWorkflow
 						workflow.initial_activity :test_activity, '1.0.0'
 					end
 
+
 					it "should store the initial activity" do
 						workflow.send(:initial_activity_type).should == domain.activity_types[:test_activity, '1.0.0']
 					end
 
 					it "should start a workflow based on the declared initial activity" do
 						event = stub( :attributes => stub( :input => "Mary had a little lamb"))
-						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
 						decision_task.should_receive(:schedule_activity_task).with(domain.activity_types[:test_activity, '1.0.0'], input: event.attributes.input)
 
 						event_handlers[:WorkflowExecutionStarted].process(decision_task, event)
@@ -79,7 +81,6 @@ module SimplerWorkflow
 				context "An activity completed." do
 					it "should complete an execution when there isn't a next activity declared" do
 						event = stub(:attributes => {})
-						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
 						decision_task.should_receive(:complete_workflow_execution).with(result: 'success')
 
 						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
@@ -89,7 +90,6 @@ module SimplerWorkflow
 						event = Map.new
 						event.set(:attributes, :result, '{"blah":"Hello"}')
 
-						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
 						decision_task.should_receive(:complete_workflow_execution).with(result: 'success')
 
 						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
@@ -102,7 +102,6 @@ module SimplerWorkflow
 
 						next_activity = workflow.domain.activity_types[:test_activity, '1.0.0']
 
-						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
 
 						scheduled_event = Map.new
 						scheduled_event.set(:attributes, :input, "mary had a little lamb")
@@ -118,7 +117,6 @@ module SimplerWorkflow
 					it "should fail the workflow if details about the failure aren't provided" do
 						event = Map.new
 						event.set(:attributes, :blah, "mary had a little lamb")
-						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
 						decision_task.should_receive(:fail_workflow_execution)
 
 						event_handlers[:ActivityTaskFailed].process(decision_task, event)
@@ -129,11 +127,55 @@ module SimplerWorkflow
 						details = {failure_policy: :fail}
 						event.set(:attributes, :details, details.to_json)
 
-						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
 						decision_task.should_receive(:fail_workflow_execution)
 
 						event_handlers[:ActivityTaskFailed].process(decision_task, event)
 					end
+
+					it "should cancel the execution if instructed to abort" do
+						event = Map.new
+						details = {failure_policy: :abort}
+						event.set(:attributes, :details, details.to_json)
+
+						decision_task.should_receive(:cancel_workflow_execution)
+
+						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+					end
+
+					it "should cancel the execution if instructed to do so" do
+						event = Map.new
+						details = {failure_policy: :cancel}
+						event.set(:attributes, :details, details.to_json)
+
+						decision_task.should_receive(:cancel_workflow_execution)
+
+						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+					end
+
+          it "should reschedule the activity if requested" do
+            activity_type = domain.activity_types[:test_activity, "1.0.0"]
+            event = Map.new
+            details = {failure_policy: :retry}
+            event.set(:attributes, :details, details.to_json)
+            scheduled_event = Map.new
+            scheduled_event.set(:attributes, :input, "Mary had a little lamb")
+            scheduled_event.set(:attributes, :activity_type, activity_type)
+
+            decision_task.should_receive(:schedule_activity_task).with(activity_type, input: scheduled_event.attributes.input)
+
+            workflow.should_receive(:scheduled_event).at_least(1).times.with(decision_task, event).and_return(scheduled_event)
+
+            event_handlers[:ActivityTaskFailed].process(decision_task, event)
+          end
+
+          it "should fail malformed details attribute" do
+						event = Map.new
+						event.set(:attributes, :details, "Mary had a little lamb")
+
+						decision_task.should_receive(:fail_workflow_execution)
+
+						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+          end
 				end
       end
     end

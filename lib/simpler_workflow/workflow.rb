@@ -114,6 +114,14 @@ module SimplerWorkflow
       decision_task.scheduled_event(event)
     end
 
+    def last_activity(decision_task, event)
+      scheduled_event(decision_task, event).attributes.activity_type
+    end
+
+    def last_input(decision_task, event)
+      scheduled_event(decision_task, event).attributes.input
+    end
+
     protected
     def self.workflows
       @workflows ||= {}
@@ -121,14 +129,6 @@ module SimplerWorkflow
 
     def self.swf
       SimplerWorkflow.swf
-    end
-
-    def last_activity(decision_task, event)
-      scheduled_event(decision_task, event).attributes.activity_type
-    end
-
-    def last_input(decision_task, event)
-      scheduled_event(decision_task, event).attributes.input
     end
 
     def logger
@@ -153,7 +153,31 @@ module SimplerWorkflow
         ]
     end
 
+    module CommonHandlerMethods
+      def scheduled_event(*args)
+        workflow.scheduled_event(*args)
+      end
+
+      def domain
+        workflow.domain
+      end
+
+      def last_activity(*args)
+        workflow.last_activity(*args)
+      end
+
+      def last_input(*args)
+        workflow.last_input(*args)
+      end
+
+      def initial_activity_type
+        workflow.initial_activity_type
+      end
+    end
+
     class WorkflowEventHandler
+      include CommonHandlerMethods
+
       attr_accessor :handler
 
       def initialize(&block)
@@ -166,6 +190,8 @@ module SimplerWorkflow
     end
 
     class ActivityTaskTimedOutHandler
+      include CommonHandlerMethods
+
       attr_accessor :workflow
 
       def initialize(workflow)
@@ -181,18 +207,11 @@ module SimplerWorkflow
           decision_task.cancel_workflow_execution
         end
       end
-
-      protected
-      def last_activity(*args)
-        workflow.last_activity(*args)
-      end
-
-      def last_input(*args)
-        workflow.last_input(*args)
-      end
     end
 
     class ActivityTaskFailedHandler
+      include CommonHandlerMethods
+
       attr_accessor :workflow
 
       def initialize(workflow)
@@ -202,22 +221,26 @@ module SimplerWorkflow
       def process(decision_task, event)
         if event.attributes.has_key?(:details)
           details = Map.from_json(event.attributes.details)
-          case details.failure_policy.to_sym
+          case details.fetch(:failure_policy, "fail").to_sym
           when :abort, :cancel
             decision_task.cancel_workflow_execution
-          when :fail
-            decision_task.fail_workflow_execution
           when :retry
-            logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
+            SimplerWorkflow.logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
             decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+          else
+            decision_task.fail_workflow_execution
           end
         else
           decision_task.fail_workflow_execution
         end
+      rescue JSON::ParserError
+        decision_task.fail_workflow_execution
       end
     end
 
     class ActivityTaskCompletedHandler
+      include CommonHandlerMethods
+
       attr_accessor :workflow
 
       def initialize(workflow)
@@ -238,18 +261,11 @@ module SimplerWorkflow
           decision_task.complete_workflow_execution result: 'success'
         end
       end
-
-      protected
-      def scheduled_event(*args)
-        workflow.scheduled_event(*args)
-      end
-
-      def domain
-        workflow.domain
-      end
     end
 
     class WorkflowExecutionStartedHandler
+      include CommonHandlerMethods
+
       attr_accessor :workflow
 
       def initialize(workflow)
@@ -259,11 +275,7 @@ module SimplerWorkflow
       def process(decision_task, event)
         decision_task.schedule_activity_task initial_activity_type, input: event.attributes.input
       end
-
-      protected
-      def initial_activity_type
-        workflow.initial_activity_type
-      end
     end
+
   end
 end
