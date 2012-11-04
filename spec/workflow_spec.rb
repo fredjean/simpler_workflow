@@ -58,16 +58,82 @@ module SimplerWorkflow
           end
         end
 
-				it "should start a workflow based on the declared initial activity" do
-					workflow.initial_activity :test_activity, '1.0.0'
+				context "The workflow's initial activity" do
+					before :each do
+						workflow.initial_activity :test_activity, '1.0.0'
+					end
 
-					workflow.send(:initial_activity_type).should == domain.activity_types[:test_activity, '1.0.0']
+					it "should store the initial activity" do
+						workflow.send(:initial_activity_type).should == domain.activity_types[:test_activity, '1.0.0']
+					end
 
-					event = stub( :attributes => stub( :input => "Mary had a little lamb"))
-					decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
-					decision_task.should_receive(:schedule_activity_task).with(domain.activity_types[:test_activity, '1.0.0'], input: event.attributes.input)
+					it "should start a workflow based on the declared initial activity" do
+						event = stub( :attributes => stub( :input => "Mary had a little lamb"))
+						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+						decision_task.should_receive(:schedule_activity_task).with(domain.activity_types[:test_activity, '1.0.0'], input: event.attributes.input)
 
-					event_handlers[:WorkflowExecutionStarted].process(decision_task, event)
+						event_handlers[:WorkflowExecutionStarted].process(decision_task, event)
+					end
+				end
+
+				context "An activity completed." do
+					it "should complete an execution when there isn't a next activity declared" do
+						event = stub(:attributes => {})
+						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+						decision_task.should_receive(:complete_workflow_execution).with(result: 'success')
+
+						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
+					end
+
+					it "should complete the execution if we have results but to not provide a next activity" do
+						event = Map.new
+						event.set(:attributes, :result, '{"blah":"Hello"}')
+
+						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+						decision_task.should_receive(:complete_workflow_execution).with(result: 'success')
+
+						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
+					end
+
+					it "should schedule the next activity if it is provided" do
+						event = Map.new
+						next_activity_param = { next_activity: { name: :test_activity, version: "1.0.0"}}
+						event.set(:attributes, :result, next_activity_param.to_json)
+
+						next_activity = workflow.domain.activity_types[:test_activity, '1.0.0']
+
+						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+
+						scheduled_event = Map.new
+						scheduled_event.set(:attributes, :input, "mary had a little lamb")
+						workflow.should_receive(:scheduled_event).with(decision_task, event).and_return(scheduled_event)
+
+						decision_task.should_receive(:schedule_activity).with(next_activity, input: scheduled_event.attributes.input)
+
+						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
+					end
+				end
+
+				context "An activity task failed" do
+					it "should fail the workflow if details about the failure aren't provided" do
+						event = Map.new
+						event.set(:attributes, :blah, "mary had a little lamb")
+						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+						decision_task.should_receive(:fail_workflow_execution)
+
+						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+					end
+
+					it "should fail the execution if instructed to do so" do
+						event = Map.new
+						details = {failure_policy: :fail}
+						event.set(:attributes, :details, details.to_json)
+
+						decision_task = mock(AWS::SimpleWorkflow::DecisionTask)
+						decision_task.should_receive(:fail_workflow_execution)
+
+						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+					end
 				end
       end
     end

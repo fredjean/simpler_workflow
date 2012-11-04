@@ -110,6 +110,10 @@ module SimplerWorkflow
       workflows[[name, version]] = workflow
     end
 
+    def scheduled_event(decision_task, event)
+      decision_task.scheduled_event(event)
+    end
+
     protected
     def self.workflows
       @workflows ||= {}
@@ -117,10 +121,6 @@ module SimplerWorkflow
 
     def self.swf
       SimplerWorkflow.swf
-    end
-
-    def scheduled_event(decision_task, event)
-      decision_task.scheduled_event(event)
     end
 
     def last_activity(decision_task, event)
@@ -200,13 +200,13 @@ module SimplerWorkflow
       end
 
       def process(decision_task, event)
-        if event.attributes.keys.include?(:details)
+        if event.attributes.has_key?(:details)
           details = Map.from_json(event.attributes.details)
           case details.failure_policy.to_sym
           when :abort, :cancel
             decision_task.cancel_workflow_execution
           when :fail
-            decision.task.fail_workflow_execution
+            decision_task.fail_workflow_execution
           when :retry
             logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
             decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
@@ -225,13 +225,16 @@ module SimplerWorkflow
       end
 
       def process(decision_task, event)
-        if event.attributes.keys.include?(:result)
+        if event.attributes.has_key?(:result)
           result = Map.from_json(event.attributes.result)
-          next_activity = result[:next_activity]
-          activity_type = domain.activity_types[next_activity[:name], next_activity[:version]]
-          decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
+          if next_activity = result[:next_activity]
+            activity_type = domain.activity_types[next_activity[:name], next_activity[:version]]
+            decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
+          else
+            decision_task.complete_workflow_execution(result: 'success')
+          end
         else
-          logger.info("Workflow #{name}, #{version} completed")
+          SimplerWorkflow.logger.info("Workflow #{workflow.name}, #{workflow.version} completed")
           decision_task.complete_workflow_execution result: 'success'
         end
       end
@@ -239,6 +242,10 @@ module SimplerWorkflow
       protected
       def scheduled_event(*args)
         workflow.scheduled_event(*args)
+      end
+
+      def domain
+        workflow.domain
       end
     end
 
