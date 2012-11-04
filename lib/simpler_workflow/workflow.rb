@@ -128,7 +128,7 @@ module SimplerWorkflow
           when :abort, :cancel
             decision_task.cancel_workflow_execution
           when :fail
-            decision.task.fail_workflow_execution
+            decision_task.fail_workflow_execution
           when :retry
             logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
             decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
