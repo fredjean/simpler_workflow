@@ -35,4 +35,6 @@ EOM
   gem.add_development_dependency 'travis-lint'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pry-nav'
+	gem.add_development_dependency 'logging'
+
 end

@@ -9,6 +9,7 @@
 require 'simpler_workflow'
 require 'aws/simple_workflow'
 require 'pry'
+require 'logging'
 
 RSpec.configure do |config|
   config.treat_symbols_as_metadata_keys_with_true_values = true
@@ -19,13 +20,12 @@ RSpec.configure do |config|
     AWS.stub!
     AWS.config(:access_key_id => 'TESTKEY', :secret_access_key => 'TESTSECRET')
   end
+
+	$logger = Logging.logger(STDOUT)
 end
 
 class SimplerWorkflow::Workflow::WorkflowEventHandler
   def workflow_event_handler?
     is_a?(SimplerWorkflow::Workflow::WorkflowEventHandler)
   end
-end
-def stub_list_domains
-
 end
