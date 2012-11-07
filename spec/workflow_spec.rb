@@ -171,12 +171,38 @@ module SimplerWorkflow
           it "should fail malformed details attribute" do
 						event = Map.new
 						event.set(:attributes, :details, "Mary had a little lamb")
-
+    
 						decision_task.should_receive(:fail_workflow_execution)
 
 						event_handlers[:ActivityTaskFailed].process(decision_task, event)
           end
 				end
+
+        context "an activity timed out" do
+          %w(START_TO_CLOSE SCHEDULE_TO_CLOSE SCHEDULE_TO_START).each do |timeout_type|
+            it "should retry a timed out decision task on #{timeout_type}" do
+              activity_type = domain.activity_types[:test_activity, "1.0.0"]
+              event = Map.new
+              event.set(:attributes, :timeoutType, timeout_type)
+              scheduled_event = Map.new
+              scheduled_event.set(:attributes, :input, "Mary had a little lamb")
+              scheduled_event.set(:attributes, :activity_type, activity_type)
+
+              decision_task.should_receive(:scheduled_event).twice.and_return(scheduled_event)
+              decision_task.should_receive(:schedule_activity_task).with(activity_type, input: scheduled_event.attributes.input)
+              event_handlers[:ActivityTaskTimedOut].process(decision_task, event)
+            end
+          end
+
+          it "should fail a workflow execution when the heartbeat fails" do
+            event = Map.new
+            event.set(:attributes, :timeoutType, 'HEARTBEAT')
+
+            decision_task.should_receive(:fail_workflow_execution)
+
+            event_handlers[:ActivityTaskTimedOut].process(decision_task, event)
+          end
+        end
       end
     end
   end

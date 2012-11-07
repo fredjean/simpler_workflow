@@ -201,10 +201,11 @@ module SimplerWorkflow
       def process(decision_task, event)
         case event.attributes.timeoutType
         when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
-          logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version} due to timeout.")
-          decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+          last_activity_type = last_activity(decision_task, event)
+          SimplerWorkflow.logger.info("Retrying activity #{last_activity_type.name} #{last_activity_type.version} due to timeout.")
+          decision_task.schedule_activity_task last_activity_type, :input => last_input(decision_task, event)
         when 'HEARTBEAT'
-          decision_task.cancel_workflow_execution
+          decision_task.fail_workflow_execution
         end
       end
     end
@@ -225,8 +226,9 @@ module SimplerWorkflow
           when :abort, :cancel
             decision_task.cancel_workflow_execution
           when :retry
-            SimplerWorkflow.logger.info("Retrying activity #{last_activity(decision_task, event).name} #{last_activity(decision_task, event).version}")
-            decision_task.schedule_activity_task last_activity(decision_task, event), :input => last_input(decision_task, event)
+            last_activity_type = last_activity(decision_task, event)
+            SimplerWorkflow.logger.info("Retrying activity #{last_activity_type.name} #{last_activity_type.version}")
+            decision_task.schedule_activity_task last_activity_type, :input => last_input(decision_task, event)
           else
             decision_task.fail_workflow_execution
           end
