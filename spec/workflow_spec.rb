@@ -36,7 +36,7 @@ module SimplerWorkflow
 
     context "Registering a new workflow." do
       before :each do 
-        Workflow.send :public, :event_handlers
+        Workflow.__send__ :public, :event_handlers
       end
 
       context "default workflows" do
@@ -57,6 +57,17 @@ module SimplerWorkflow
             handler = event_handlers[event]
             handler.should_not be_nil
             handler.class.name.should == "SimplerWorkflow::Workflow::#{event}Handler"
+          end
+
+          it "should call the right handler for #{event}" do
+            new_event = Map.new
+            new_event.set(:event_type, event)
+
+            decision_task.should_receive(:new_events).and_return([new_event])
+
+            event_handlers[new_event.event_type].should_receive(:process).with(decision_task, new_event)
+
+            workflow.__send__ :handle_decision_task, decision_task
           end
         end
 

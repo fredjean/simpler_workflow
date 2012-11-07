@@ -140,7 +140,7 @@ module SimplerWorkflow
       logger.info("Received decision task")
       decision_task.new_events.each do |event|
         logger.info("Processing #{event.event_type}")
-        event_handlers[event.event_type].process
+        event_handlers[event.event_type].process(decision_task, event)
       end
     end
 
