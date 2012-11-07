@@ -36,7 +36,7 @@ module SimplerWorkflow
 
     context "Registering a new workflow." do
       before :each do 
-        Workflow.__send__ :public, :event_handlers
+        Workflow.send :public, :event_handlers
       end
 
       context "default workflows" do
@@ -67,7 +67,7 @@ module SimplerWorkflow
 
             event_handlers[new_event.event_type].should_receive(:process).with(decision_task, new_event)
 
-            workflow.__send__ :handle_decision_task, decision_task
+            workflow.send :handle_decision_task, decision_task
           end
         end
 
