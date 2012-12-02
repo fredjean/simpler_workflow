@@ -24,15 +24,16 @@ module SimplerWorkflow
     def register_workflow(name, version, &block)
       unless workflow = Workflow[name, version]
         workflow = Workflow.new(self, name, version)
+
+        workflow.instance_eval(&block) if block_given?
+
+        begin
+          self.domain.workflow_types.register(name, version, workflow.options)
+        rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
+          # Instance already registered...
+        end
       end
 
-      workflow.instance_eval(&block) if block_given?
-
-      begin
-        self.domain.workflow_types.register(name.to_s, version, workflow.options)
-      rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
-        # Instance already registered...
-      end
       workflow
     end
 

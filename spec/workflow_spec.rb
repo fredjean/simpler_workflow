@@ -43,9 +43,26 @@ module SimplerWorkflow
         let(:workflow) { domain.register_workflow('test-workflow', '1.0.0') }
 
         let(:event_handlers) { workflow.event_handlers }
+
         it "should allow the registration of a domain." do
           workflow.name.should == 'test-workflow'
           workflow.version.should == '1.0.0'
+        end
+
+        it "should have a default tasklist" do
+          workflow.task_list.should == workflow.name
+        end
+
+        it "should have a default task start to close timeout" do
+          workflow.options[:default_task_start_to_close_timeout].should == "120"
+        end
+
+        it "should have a default execution start to close timeout" do
+          workflow.options[:default_execution_start_to_close_timeout].should == "120"
+        end
+
+        it "should have a default child policy of terminate" do
+          workflow.options[:default_child_policy].should == 'TERMINATE'
         end
 
         it 'should have default handlers' do

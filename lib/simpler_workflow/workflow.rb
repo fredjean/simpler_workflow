@@ -74,7 +74,7 @@ module SimplerWorkflow
     end
 
     def task_list
-      @options[:default_task_list][:name].to_s
+      options[:default_task_list][:name].to_s
     end
 
     def to_workflow_type
