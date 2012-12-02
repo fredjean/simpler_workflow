@@ -59,14 +59,14 @@ module SimplerWorkflow
       unless activity = Activity[name, version]
         logger.info("Registering Activity[#{name},#{version}]")
         activity = Activity.new(self, name, version)
-      end
 
-      activity.instance_eval(&block) if block
+        activity.instance_eval(&block) if block
 
-      begin
-        self.domain.activity_types.register(name.to_s, version, activity.options)
-      rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
-        # Nothing to do, should probably log something here...
+        begin
+          self.domain.activity_types.register(name.to_s, version, activity.options)
+        rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
+          # Nothing to do, should probably log something here...
+        end
       end
 
       activity
