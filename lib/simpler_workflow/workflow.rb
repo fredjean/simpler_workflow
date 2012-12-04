@@ -91,15 +91,15 @@ module SimplerWorkflow
     end
 
     def on_activity_completed(&block)
-      event_handler['ActivityTaskCompleted'] = WorkflowEventHandler.new(&block)
+      event_handlers['ActivityTaskCompleted'] = WorkflowEventHandler.new(&block)
     end
 
     def on_activity_failed(&block)
-      event_handler['ActivityTaskFailed'] = WorkflowEventHandler.new(&block)
+      event_handlers['ActivityTaskFailed'] = WorkflowEventHandler.new(&block)
     end
 
     def on_activity_timed_out(&block)
-      event_handler['ActivityTaskTimedOut'] = WorkflowEventHandler.new(&block)
+      event_handlers['ActivityTaskTimedOut'] = WorkflowEventHandler.new(&block)
     end
 
     def self.[](name, version)
