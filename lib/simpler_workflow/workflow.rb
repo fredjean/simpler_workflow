@@ -62,9 +62,7 @@ module SimplerWorkflow
             end
           rescue => e
             context = {
-              :workflow_execution => decision_task.workflow_execution,
-              :workflow => to_workflow_type,
-              :decision_task => decision_task
+              :workflow => to_workflow_type
             }
             SimplerWorkflow.exception_reporter.report(e, context)
             raise e
@@ -140,7 +138,7 @@ module SimplerWorkflow
       logger.info("Received decision task")
       decision_task.new_events.each do |event|
         logger.info("Processing #{event.event_type}")
-        event_handlers[event.event_type].process(decision_task, event)
+        event_handlers.fetch(event.event_type, UnknownEventHandler.new(self)).process(decision_task, event)
       end
     end
 
@@ -279,5 +277,16 @@ module SimplerWorkflow
       end
     end
 
+    class UnknownEventHandler
+      include CommonHandlerMethods
+
+      attr_accessor :workflow
+
+      def initialize(workflow)
+        @workflow = workflow
+      end
+
+      def process(*args); end
+    end
   end
 end
