@@ -18,7 +18,18 @@ module SimplerWorkflow
     end
 
     def Domain.[](domain_name)
-      Domain.domains(domain_name)
+      Domain.domains(domain_name.to_sym)
+    end
+
+    def Domain.for(domain)
+      case domain
+      when String, Symbol
+        Domain[domain]
+      when Domain
+        domain
+      when AWS::SimpleWorkflow::Domain
+        Domain[domain.name]
+      end
     end
 
     def register_workflow(name, version, &block)
@@ -61,6 +72,8 @@ module SimplerWorkflow
         activity = Activity.new(self, name, version)
 
         activity.instance_eval(&block) if block
+
+        activity.persist_attributes
 
         begin
           self.domain.activity_types.register(name.to_s, version, activity.options)

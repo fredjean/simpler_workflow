@@ -64,15 +64,28 @@ module SimplerWorkflow
       domain.activity_types[name.to_s, version]
     end
 
+    def persist_attributes
+      activities.persist_attributes(self)
+    end
+
     def simple_db_attributes
-      {
+      attributes = {
         domain: domain.name,
         name: name,
         version: version,
-        next_activity_name: next_activity.name,
-        next_activity_version: next_activity.version,
         failure_policy: failure_policy
       }
+
+      if (next_activity)
+        attributes[:next_activity_name] = next_activity.name
+        attributes[:next_activity_version] = next_activity.version
+      end
+
+      attributes
+    end
+
+    def simple_db_name
+      "#{name}-#{version}"
     end
 
     def start_activity_loop
@@ -149,6 +162,10 @@ module SimplerWorkflow
     end
 
     protected
+    def activities
+      self.class.activities
+    end
+
     def self.activities
       @activities ||= ActivityRegistry.new
     end
