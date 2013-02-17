@@ -5,7 +5,7 @@ module SimplerWorkflow
     attr_reader :domain, :name, :version, :options, :next_activity
 
     def initialize(domain, name, version, options = {})
-      Activity.activities[[name, version]] ||= begin
+      Activity.activities[domain, name, version] ||= begin
         default_options = {
           :default_task_list => name,
           :default_task_start_to_close_timeout => 5 * 60,
@@ -62,6 +62,17 @@ module SimplerWorkflow
 
     def to_activity_type
       domain.activity_types[name.to_s, version]
+    end
+
+    def simple_db_attributes
+      {
+        domain: domain.name,
+        name: name,
+        version: version,
+        next_activity_name: next_activity.name,
+        next_activity_version: next_activity.version,
+        failure_policy: failure_policy
+      }
     end
 
     def start_activity_loop
@@ -129,12 +140,12 @@ module SimplerWorkflow
       domain.activity_tasks.count(name).to_i
     end
 
-    def self.[](name, version = nil)
-      activities[name, version]
+    def self.[](domain, name, version = nil)
+      activities[domain, name, version]
     end
 
-    def self.register(name, version, activity)
-      activities.register(name, version, activity)
+    def self.register(domain, name, version, activity)
+      activities.register(domain, name, version, activity)
     end
 
     protected

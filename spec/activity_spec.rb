@@ -27,6 +27,8 @@ module SimplerWorkflow
       }
     }
 
+    let(:sdb) { AWS::SimpleDB.new }
+
     before :each do
       describe_domain_response.stub(:data).and_return(domain_desc)
       client.stub(:describe_domain).and_return(describe_domain_response)
@@ -41,6 +43,7 @@ module SimplerWorkflow
         it "should allow the registration of an activity" do
           activity.name.should == 'test-activity'
           activity.version.should == '1.0.0'
+          activity.domain.should == domain
         end
       end
     end

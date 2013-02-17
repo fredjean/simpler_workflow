@@ -1,43 +1,51 @@
 module SimplerWorkflow
   class ActivityRegistry
+    def register(*activity_tuple)
+      domain = activity_tuple.shift
+      activity = activity_tuple.pop
 
-    def register(name, version = nil, activity)
-      case name
-      when String
-        name = name.to_sym
-      when Array
-        name, version = name
-      when Hash
-        name.symbolize_keys!
-        version = name[:version]
-        name = name[:name]
-      end
-
-      registry[[name,version]] = activity
+      registry_for_domain(domain)[activity_tuple] = activity
     end
 
     alias :[]= :register
 
 
-    def get(name, version=nil)
-      case name
-      when String
-        name = name.to_sym
-      when Hash
-        name.symbolize_keys!
-        version = name[:version]
-        name = name[:name]
-      when Array
-        name, version = name
-      end
-      registry[[name, version]]
+    def get(*activity_tuple)
+      domain = activity_tuple.shift
+
+      registry_for_domain(domain)[activity_tuple]
     end
 
     alias :[] :get
     
     protected
-    def registry
-      @registry ||= {}
+    def registries
+      @registries ||= {}
+    end
+
+    def registry_for_domain(domain)
+      domain = case domain
+               when String, Symbol
+                 Domain[domain.to_sym]
+               when Domain
+                 domain
+               when AWS::SimpleWorkflow::Domain
+                 Domain[domain.name.to_sym]
+               end
+
+      unless sdb.domains["swf-#{domain.name}-activities"].exists?
+        sdb.domains.create("swf-#{domain.name}-activities")
+      end
+
+      registries[domain.name.to_sym] ||= {}
+    end
+
+    def self.sdb
+      @sdb ||= AWS::SimpleDB.new
+    end
+
+    def sdb
+      self.class.sdb
     end
   end
 end

@@ -56,7 +56,7 @@ module SimplerWorkflow
     end
 
     def register_activity(name, version = nil, &block)
-      unless activity = Activity[name, version]
+      unless activity = activities[self, name, version]
         logger.info("Registering Activity[#{name},#{version}]")
         activity = Activity.new(self, name, version)
 
