@@ -54,6 +54,7 @@ module SimplerWorkflow
   autoload :Domain,   'simpler_workflow/domain'
   autoload :Workflow, 'simpler_workflow/workflow'
   autoload :Activity, 'simpler_workflow/activity'
+  autoload :ActivityRegistry, 'simpler_workflow/activity_registry'
   autoload :OptionsAsMethods, 'simpler_workflow/options_as_methods'
   autoload :DefaultExceptionReporter, 'simpler_workflow/default_exception_reporter'
 end

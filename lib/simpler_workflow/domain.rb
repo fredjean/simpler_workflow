@@ -55,7 +55,7 @@ module SimplerWorkflow
       domain.activity_types
     end
 
-    def register_activity(name, version, &block)
+    def register_activity(name, version = nil, &block)
       unless activity = Activity[name, version]
         logger.info("Registering Activity[#{name},#{version}]")
         activity = Activity.new(self, name, version)
@@ -65,7 +65,7 @@ module SimplerWorkflow
         begin
           self.domain.activity_types.register(name.to_s, version, activity.options)
         rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
-          # Nothing to do, should probably log something here...
+          SimplerWorkflow.logger.info("Activity[#{name}, #{version}] already registered with SWF.")
         end
       end
 

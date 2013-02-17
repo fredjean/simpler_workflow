@@ -130,24 +130,16 @@ module SimplerWorkflow
     end
 
     def self.[](name, version = nil)
-      case name
-      when String
-        name = name.to_sym
-      when Hash
-        name.symbolize_keys!
-        version = name[:version]
-        name = name[:name]
-      end
-      activities[[name, version]]
+      activities[name, version]
     end
 
     def self.register(name, version, activity)
-      activities[[name, version]] = activity
+      activities.register(name, version, activity)
     end
 
     protected
     def self.activities
-      @activities ||= {}
+      @activities ||= ActivityRegistry.new
     end
 
     def self.swf
