@@ -218,23 +218,20 @@ module SimplerWorkflow
       end
 
       def process(decision_task, event)
-        if event.attributes.has_key?(:details)
-          details = Map.from_json(event.attributes.details)
-          case details.fetch(:failure_policy, "fail").to_sym
-          when :abort, :cancel
-            decision_task.cancel_workflow_execution
-          when :retry
-            last_activity_type = last_activity(decision_task, event)
-            SimplerWorkflow.logger.info("Retrying activity #{last_activity_type.name} #{last_activity_type.version}")
-            decision_task.schedule_activity_task last_activity_type, :input => last_input(decision_task, event)
-          else
-            decision_task.fail_workflow_execution
-          end
+        last_activity_type = last_activity(decision_task, event)
+        failed_activity = domain.activities[last_activity_type]
+        
+        case failed_activity.failure_policy
+        when :abort, :cancel
+          SimplerWorkflow.logger.info("Cancelling workflow execution.")
+          decision_task.cancel_workflow_execution
+        when :retry
+          SimplerWorkflow.logger.info("Retrying activity #{last_activity_type.name} #{last_activity_type.version}")
+          decision_task.schedule_activity_task last_activity_type, :input => last_input(decision_task, event)
         else
+          SimplerWorkflow.logger.info("Failing the workflow execution.")
           decision_task.fail_workflow_execution
         end
-      rescue JSON::ParserError
-        decision_task.fail_workflow_execution
       end
     end
 
@@ -248,20 +245,15 @@ module SimplerWorkflow
       end
 
       def process(decision_task, event)
-        if event.attributes.has_key?(:result)
-          last_activity_type = last_activity(decision_task, event)
+        last_activity_type = last_activity(decision_task, event)
 
-          completed_activity = domain.activities[last_activity_type]
+        completed_activity = domain.activities[last_activity_type]
 
-          if next_activity = completed_activity.next_activity
-            activity_type = domain.activity_types[next_activity.name, next_activity.version]
-            decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
-          else
-            decision_task.complete_workflow_execution(result: 'success')
-          end
+        if next_activity = completed_activity.next_activity
+          activity_type = domain.activity_types[next_activity.name, next_activity.version]
+          decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
         else
-          SimplerWorkflow.logger.info("Workflow #{workflow.name}, #{workflow.version} completed")
-          decision_task.complete_workflow_execution result: 'success'
+          decision_task.complete_workflow_execution(result: 'success')
         end
       end
     end
