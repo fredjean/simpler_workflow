@@ -118,23 +118,35 @@ module SimplerWorkflow
 						event = Map.new
 						event.set(:attributes, :result, '{"blah":"Hello"}')
 
+            scheduled_activity = domain.register_activity(:completion_activity, '1.0.0')
+
+						scheduled_event = Map.new
+						scheduled_event.set(:attributes, :input, "mary had a little lamb")
+            scheduled_event.set(:attributes, :activity_type, scheduled_activity.to_activity_type)
+
+            decision_task.should_receive(:scheduled_event).with(event).and_return(scheduled_event)
 						decision_task.should_receive(:complete_workflow_execution).with(result: 'success')
 
 						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
 					end
 
-					it "should schedule the next activity if it is provided" do
+					it "should schedule the next activity if the current one declares one" do
 						event = Map.new
-						next_activity_param = { next_activity: { name: :test_activity, version: "1.0.0"}}
-						event.set(:attributes, :result, next_activity_param.to_json)
+						event.set(:attributes, :result, "success")
 
-						next_activity = workflow.domain.activity_types[:test_activity, '1.0.0']
+            test_activity = domain.register_activity(:test_activity, '1.0.0')
 
+            scheduled_activity = domain.register_activity(:success_activity, '1.0.0') do 
+              on_success :test_activity, '1.0.0'
+            end
+
+						next_activity = test_activity.to_activity_type
 
 						scheduled_event = Map.new
 						scheduled_event.set(:attributes, :input, "mary had a little lamb")
-						workflow.should_receive(:scheduled_event).with(decision_task, event).and_return(scheduled_event)
+            scheduled_event.set(:attributes, :activity_type, scheduled_activity.to_activity_type)
 
+            decision_task.should_receive(:scheduled_event).with(event).twice.and_return(scheduled_event)
 						decision_task.should_receive(:schedule_activity).with(next_activity, input: scheduled_event.attributes.input)
 
 						event_handlers[:ActivityTaskCompleted].process(decision_task, event)

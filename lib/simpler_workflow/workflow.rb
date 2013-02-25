@@ -249,9 +249,12 @@ module SimplerWorkflow
 
       def process(decision_task, event)
         if event.attributes.has_key?(:result)
-          result = Map.from_json(event.attributes.result)
-          if next_activity = result[:next_activity]
-            activity_type = domain.activity_types[next_activity[:name], next_activity[:version]]
+          last_activity_type = last_activity(decision_task, event)
+
+          completed_activity = domain.activities[last_activity_type]
+
+          if next_activity = completed_activity.next_activity
+            activity_type = domain.activity_types[next_activity.name, next_activity.version]
             decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
           else
             decision_task.complete_workflow_execution(result: 'success')

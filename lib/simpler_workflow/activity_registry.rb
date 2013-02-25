@@ -12,8 +12,24 @@ module SimplerWorkflow
 
     def get(*activity_tuple)
       domain = activity_tuple.shift
+      
+      if AWS::SimpleWorkflow::ActivityType === domain
+        name = domain.name.to_sym
+        version = domain.version
+        domain = domain.domain
+      else
+        name = activity_tuple.first
+        
+        case name
+        when Hash
+          version = name[:version]
+          name = name[:name]
+        when String, Symbol
+          version = activity_tuple.last
+        end
+      end
 
-      registry_for_domain(domain)[activity_tuple]
+      registry_for_domain(domain)[[name, version]]
     end
 
     alias :[] :get
