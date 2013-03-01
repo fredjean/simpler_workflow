@@ -58,9 +58,3 @@ module SimplerWorkflow
   autoload :OptionsAsMethods, 'simpler_workflow/options_as_methods'
   autoload :DefaultExceptionReporter, 'simpler_workflow/default_exception_reporter'
 end
-
-class Map
-  def Map.from_json(json)
-    from_hash(JSON.parse(json))
-  end
-end

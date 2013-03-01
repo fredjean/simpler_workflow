@@ -29,7 +29,7 @@ EOM
   gem.required_ruby_version = '>= 1.9.0'
 
   gem.add_dependency 'aws-sdk'
-  gem.add_dependency 'map'
+  gem.add_development_dependency 'map'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
   gem.add_development_dependency 'travis-lint'
