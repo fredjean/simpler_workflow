@@ -23,7 +23,6 @@ module SimplerWorkflow
     def on_success(activity, version = nil)
       case activity
       when Hash
-        activity.symbolize_keys!
         name = activity[:name].to_sym
         version = activity[:version]
       when String

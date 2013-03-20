@@ -82,6 +82,51 @@ module SimplerWorkflow
           activity.perform_task(task)
         end
       end
+
+      context "We should always return an activity from the registry" do
+        subject(:activity) { Activity[domain, 'not-a-real-activity', '1.0.0'] }
+
+        its(:name) { should == 'not-a-real-activity' }
+        its(:version) { should == '1.0.0' }
+        its(:failure_policy) { should == :fail }
+      end
+
+      context "We are retrieving an activity that was register in a different process" do
+        subject(:activity) { Activity[domain, 'registered-somewhere-else', '1.0.0'] }
+
+        it "should build the activity from the SDB data..." do
+          Activity.activities.should_receive(:sdb_attributes).with(domain, "registered-somewhere-else-1.0.0").and_return({
+            :failure_policy => 'retry',
+            :next_activity_name => 'yet-another-activity',
+            :next_activity_version => '1.0.0'
+          })
+
+          Activity.activities.should_receive(:sdb_attributes).with(domain, 'yet-another-activity-1.0.0').and_return({})
+
+          activity.failure_policy.should == :retry
+          activity.next_activity.should == Activity[domain, 'yet-another-activity', '1.0.0']
+          activity.next_activity.failure_policy.should == :fail
+        end
+
+      end
+
+      context "Just in case we get strings from amazon SDB..." do
+        subject(:activity) { Activity[domain, 'registered-somewhere-else', '2.0.0'] }
+
+        it "should build the activity from the SDB data... with Strings this time..." do
+          Activity.activities.should_receive(:sdb_attributes).with(domain, "registered-somewhere-else-2.0.0").and_return({
+            'failure_policy' => 'retry',
+            'next_activity_name' => 'yet-another-activity',
+            'next_activity_version' => '2.0.0'
+          })
+
+          Activity.activities.should_receive(:sdb_attributes).with(domain, 'yet-another-activity-2.0.0').and_return({})
+
+          activity.failure_policy.should == :retry
+          activity.next_activity.should == Activity[domain, 'yet-another-activity', '2.0.0']
+          activity.next_activity.failure_policy.should == :fail
+        end
+      end
     end
   end
 end
