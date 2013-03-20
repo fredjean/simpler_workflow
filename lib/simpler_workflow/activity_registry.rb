@@ -23,8 +23,9 @@ module SimplerWorkflow
         case name
         when Hash
           version = name[:version]
-          name = name[:name]
+          name = name[:name].to_sym
         when String, Symbol
+          name = name.to_sym
           version = activity_tuple.last
         end
       end
@@ -54,6 +55,12 @@ module SimplerWorkflow
 
       registries[domain.name.to_sym] ||= Hash.new do |registry, (name, version)|
         activity = Activity.new(domain, name, version)
+        attributes = sdb_attributes(activity)
+        unless attributes.empty? 
+          binding.pry
+          activity.on_fail(attributes[:failure_policy]) if attributes.has_key?(:failure_policy)
+          activity.on_success(name: attributes[:next_activity_name], version: attributes[:next_activity_version]) if attributes.has_key?(:next_activity_name)
+        end
         registry[[name, version]] = activity
       end
     end
@@ -64,6 +71,14 @@ module SimplerWorkflow
 
     def sdb_domain(domain)
       sdb.domains[sdb_domain_name(domain)]
+    end
+
+    def sdb_attributes(activity)
+      if item = sdb_domain(activity.domain).items[activity.simple_db_name]
+        item.attributes.to_h
+      else
+        {}
+      end
     end
 
     def self.sdb

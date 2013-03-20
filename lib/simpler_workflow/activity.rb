@@ -47,6 +47,10 @@ module SimplerWorkflow
       @perform_task = block
     end
 
+    def name
+      @name.to_s
+    end
+
     def perform_task(task)
       logger.info("Performing task #{name}")
       @perform_task.call(task)
@@ -60,7 +64,7 @@ module SimplerWorkflow
     end
 
     def to_activity_type
-      domain.activity_types[name.to_s, version]
+      domain.activity_types[name, version]
     end
 
     def persist_attributes

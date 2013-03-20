@@ -38,13 +38,32 @@ module SimplerWorkflow
 
     context "Registering a new activity" do
       context "default activity" do
-        let(:activity) { domain.register_activity('test-activity', '1.0.0') }
+        subject(:activity) { domain.register_activity('test-activity', '1.0.0') }
 
-        it "should allow the registration of an activity" do
-          activity.name.should == 'test-activity'
-          activity.version.should == '1.0.0'
-          activity.domain.should == domain
+        its(:name) { should == 'test-activity' }
+        its(:version) { should == '1.0.0' }
+        its(:domain) { should == domain }
+        its(:failure_policy) { should == :fail }
+      end
+
+      context "Setting the failure policy" do
+        subject(:activity) do
+          domain.register_activity('test-activity', '1.0.1') do
+            on_fail :retry
+          end
         end
+
+        its(:failure_policy) { should == :retry }
+      end
+
+      context "Setting the next activity" do
+        subject(:activity) do
+          domain.register_activity('test-success', '1.0.0') do
+            on_success 'next-activity', '1.0.0'
+          end
+        end
+
+        its(:next_activity) { should == Activity[domain, 'next-activity', '1.0.0'] }
       end
     end
   end
