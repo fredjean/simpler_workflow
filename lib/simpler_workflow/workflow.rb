@@ -21,11 +21,8 @@ module SimplerWorkflow
     end
 
     def initial_activity(name, version = nil)
-      if activity = Activity[name.to_sym, version]
-        @initial_activity_type = activity.to_activity_type
-      elsif activity = domain.activity_types[name.to_s, version]
-        @initial_activity_type = activity
-      end
+      activity = Activity[domain, name.to_sym, version]
+      @initial_activity_type = activity.to_activity_type
     end
 
     def decision_loop

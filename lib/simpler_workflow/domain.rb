@@ -67,19 +67,17 @@ module SimplerWorkflow
     end
 
     def register_activity(name, version = nil, &block)
-      unless activity = activities[self, name, version]
-        logger.info("Registering Activity[#{name},#{version}]")
-        activity = Activity.new(self, name, version)
+      logger.info("Registering Activity[#{name},#{version}]")
+      activity = activities[self, name, version]
 
-        activity.instance_eval(&block) if block
+      activity.instance_eval(&block) if block
 
-        activity.persist_attributes
+      activity.persist_attributes
 
-        begin
-          self.domain.activity_types.register(name.to_s, version, activity.options)
-        rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
-          SimplerWorkflow.logger.info("Activity[#{name}, #{version}] already registered with SWF.")
-        end
+      begin
+        self.domain.activity_types.register(name.to_s, version, activity.options)
+      rescue ::AWS::SimpleWorkflow::Errors::TypeAlreadyExistsFault
+        SimplerWorkflow.logger.info("Activity[#{name}, #{version}] already registered with SWF.")
       end
 
       activity

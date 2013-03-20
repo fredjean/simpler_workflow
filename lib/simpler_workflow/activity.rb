@@ -2,24 +2,22 @@ module SimplerWorkflow
   class Activity
     include OptionsAsMethods
 
+    DEFAULT_OPTIONS = {
+      :default_task_list => name,
+      :default_task_start_to_close_timeout => 5 * 60,
+      :default_task_schedule_to_start_timeout => 5 * 60,
+      :default_task_schedule_to_close_timeout => 10 * 60,
+      :default_task_heartbeat_timeout => :none
+    }
+
     attr_reader :domain, :name, :version, :options, :next_activity
 
-    def initialize(domain, name, version, options = {})
-      Activity[domain, name, version] ||= begin
-        default_options = {
-          :default_task_list => name,
-          :default_task_start_to_close_timeout => 5 * 60,
-          :default_task_schedule_to_start_timeout => 5 * 60,
-          :default_task_schedule_to_close_timeout => 10 * 60,
-          :default_task_heartbeat_timeout => :none
-        }
-        @options = default_options.merge(options)
-        @domain = domain
-        @name = name
-        @version = version
-        @failure_policy = :fail
-        self
-      end
+    def initialize(domain, name, version)
+      @options = DEFAULT_OPTIONS.dup
+      @domain = domain
+      @name = name
+      @version = version
+      @failure_policy = :fail
     end
 
     def on_success(activity, version = nil)
@@ -167,6 +165,7 @@ module SimplerWorkflow
     end
 
     protected
+
     def activities
       self.class.activities
     end

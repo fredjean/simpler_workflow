@@ -52,7 +52,10 @@ module SimplerWorkflow
         sdb.domains.create(sdb_domain_name(domain))
       end
 
-      registries[domain.name.to_sym] ||= {}
+      registries[domain.name.to_sym] ||= Hash.new do |registry, (name, version)|
+        activity = Activity.new(domain, name, version)
+        registry[[name, version]] = activity
+      end
     end
 
     def sdb_domain_name(domain)
