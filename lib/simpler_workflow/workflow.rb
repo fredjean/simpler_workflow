@@ -138,7 +138,7 @@ module SimplerWorkflow
       logger.info("Received decision task")
       decision_task.new_events.each do |event|
         logger.info("Processing #{event.event_type}")
-        event_handlers.fetch(event.event_type, UnknownEventHandler.new(self)).process(decision_task, event)
+        event_handlers.fetch(event.event_type, DefaultEventHandler.new(self)).process(decision_task, event)
       end
     end
 
@@ -151,7 +151,13 @@ module SimplerWorkflow
         ]
     end
 
-    module CommonHandlerMethods
+    class DefaultEventHandler
+      attr_accessor :workflow
+
+      def initialize(workflow)
+        @workflow = workflow
+      end
+
       def scheduled_event(*args)
         workflow.scheduled_event(*args)
       end
@@ -171,13 +177,13 @@ module SimplerWorkflow
       def initial_activity_type
         workflow.initial_activity_type
       end
+
+      def process(*args); end
     end
 
     class WorkflowEventHandler
-      include CommonHandlerMethods
-
       attr_accessor :handler
-
+ 
       def initialize(&block)
         @handler = block
       end
@@ -187,15 +193,7 @@ module SimplerWorkflow
       end
     end
 
-    class ActivityTaskTimedOutHandler
-      include CommonHandlerMethods
-
-      attr_accessor :workflow
-
-      def initialize(workflow)
-        @workflow = workflow
-      end
-
+    class ActivityTaskTimedOutHandler < DefaultEventHandler
       def process(decision_task, event)
         case event.attributes.timeoutType
         when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
@@ -208,15 +206,7 @@ module SimplerWorkflow
       end
     end
 
-    class ActivityTaskFailedHandler
-      include CommonHandlerMethods
-
-      attr_accessor :workflow
-
-      def initialize(workflow)
-        @workflow = workflow
-      end
-
+    class ActivityTaskFailedHandler < DefaultEventHandler
       def process(decision_task, event)
         last_activity_type = last_activity(decision_task, event)
         failed_activity = domain.activities[last_activity_type]
@@ -235,15 +225,7 @@ module SimplerWorkflow
       end
     end
 
-    class ActivityTaskCompletedHandler
-      include CommonHandlerMethods
-
-      attr_accessor :workflow
-
-      def initialize(workflow)
-        @workflow = workflow
-      end
-
+    class ActivityTaskCompletedHandler < DefaultEventHandler
       def process(decision_task, event)
         last_activity_type = last_activity(decision_task, event)
 
@@ -258,30 +240,10 @@ module SimplerWorkflow
       end
     end
 
-    class WorkflowExecutionStartedHandler
-      include CommonHandlerMethods
-
-      attr_accessor :workflow
-
-      def initialize(workflow)
-        @workflow = workflow
-      end
-
+    class WorkflowExecutionStartedHandler < DefaultEventHandler
       def process(decision_task, event)
         decision_task.schedule_activity_task initial_activity_type, input: event.attributes.input
       end
-    end
-
-    class UnknownEventHandler
-      include CommonHandlerMethods
-
-      attr_accessor :workflow
-
-      def initialize(workflow)
-        @workflow = workflow
-      end
-
-      def process(*args); end
     end
   end
 end
