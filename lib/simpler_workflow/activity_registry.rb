@@ -57,7 +57,6 @@ module SimplerWorkflow
         activity = Activity.new(domain, name, version)
         attributes = sdb_attributes(activity)
         unless attributes.empty? 
-          binding.pry
           activity.on_fail(attributes[:failure_policy]) if attributes.has_key?(:failure_policy)
           activity.on_success(name: attributes[:next_activity_name], version: attributes[:next_activity_version]) if attributes.has_key?(:next_activity_name)
         end

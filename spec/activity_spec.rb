@@ -65,6 +65,23 @@ module SimplerWorkflow
 
         its(:next_activity) { should == Activity[domain, 'next-activity', '1.0.0'] }
       end
+
+      context "performing a task" do
+        subject(:activity) do
+          domain.register_activity('test-task', '1.0.0') do
+            perform_activity do |task|
+              task.complete! 'result' => "success"
+            end
+          end
+        end
+
+        it "should execute the task handler." do
+          task = mock(AWS::SimpleWorkflow::ActivityTask)
+          task.should_receive(:complete!).with("result" => "success")
+
+          activity.perform_task(task)
+        end
+      end
     end
   end
 end
