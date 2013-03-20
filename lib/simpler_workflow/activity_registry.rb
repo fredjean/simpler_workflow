@@ -56,6 +56,7 @@ module SimplerWorkflow
       registries[domain.name.to_sym] ||= Hash.new do |registry, (name, version)|
         activity = Activity.new(domain, name, version)
         attributes = sdb_attributes(domain, activity.simple_db_name)
+        
         unless attributes.empty? 
           activity.on_fail(attributes[:failure_policy]) if attributes.has_key?(:failure_policy)
           activity.on_fail(attributes['failure_policy']) if attributes.has_key?('failure_policy')
@@ -76,7 +77,8 @@ module SimplerWorkflow
 
     def sdb_attributes(domain, sdb_name)
       if item = sdb_domain(domain).items[sdb_name]
-        item.attributes.to_h
+        h = item.attributes.to_h
+        h.each { |k, v| h[k] = v.first }
       else
         {}
       end
