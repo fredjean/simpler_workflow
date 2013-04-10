@@ -211,7 +211,6 @@ module SimplerWorkflow
 
             event_handlers[:ActivityTaskFailed].call(decision_task, event)
           end
-
 				end
 
         context "an activity timed out" do
