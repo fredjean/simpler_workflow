@@ -35,7 +35,7 @@ module SimplerWorkflow
     end
 
     context "Registering a new workflow." do
-      before :each do 
+      before :each do
         Workflow.send :public, :event_handlers
       end
 
@@ -82,7 +82,7 @@ module SimplerWorkflow
 
             decision_task.should_receive(:new_events).and_return([new_event])
 
-            event_handlers[new_event.event_type].should_receive(:process).with(decision_task, new_event)
+            event_handlers[new_event.event_type].should_receive(:call).with(decision_task, new_event)
 
             workflow.send :handle_decision_task, decision_task
           end
@@ -102,7 +102,7 @@ module SimplerWorkflow
 						event = stub( :attributes => stub( :input => "Mary had a little lamb"))
 						decision_task.should_receive(:schedule_activity_task).with(domain.activity_types[:test_activity, '1.0.0'], input: event.attributes.input)
 
-						event_handlers[:WorkflowExecutionStarted].process(decision_task, event)
+						event_handlers[:WorkflowExecutionStarted].call(decision_task, event)
 					end
 				end
 
@@ -120,7 +120,7 @@ module SimplerWorkflow
             decision_task.should_receive(:scheduled_event).with(event).and_return(scheduled_event)
 						decision_task.should_receive(:complete_workflow_execution).with(result: 'success')
 
-						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
+						event_handlers[:ActivityTaskCompleted].call(decision_task, event)
 					end
 
 					it "should schedule the next activity if the current one declares one" do
@@ -129,7 +129,7 @@ module SimplerWorkflow
 
             test_activity = domain.register_activity(:test_activity, '1.0.0')
 
-            scheduled_activity = domain.register_activity(:success_activity, '1.0.0') do 
+            scheduled_activity = domain.register_activity(:success_activity, '1.0.0') do
               on_success :test_activity, '1.0.0'
             end
 
@@ -142,7 +142,7 @@ module SimplerWorkflow
             decision_task.should_receive(:scheduled_event).with(event).twice.and_return(scheduled_event)
 						decision_task.should_receive(:schedule_activity).with(next_activity, input: scheduled_event.attributes.input)
 
-						event_handlers[:ActivityTaskCompleted].process(decision_task, event)
+						event_handlers[:ActivityTaskCompleted].call(decision_task, event)
 					end
 				end
 
@@ -159,7 +159,7 @@ module SimplerWorkflow
 						decision_task.should_receive(:fail_workflow_execution)
             decision_task.should_receive(:scheduled_event).with(event).and_return(scheduled_event)
 
-						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+						event_handlers[:ActivityTaskFailed].call(decision_task, event)
 					end
 
 					it "should cancel the execution if instructed to abort" do
@@ -175,7 +175,7 @@ module SimplerWorkflow
             decision_task.should_receive(:scheduled_event).with(event).and_return(scheduled_event)
 						decision_task.should_receive(:cancel_workflow_execution)
 
-						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+						event_handlers[:ActivityTaskFailed].call(decision_task, event)
 					end
 
 					it "should cancel the execution if instructed to do so" do
@@ -192,7 +192,7 @@ module SimplerWorkflow
             decision_task.should_receive(:scheduled_event).with(event).and_return(scheduled_event)
 						decision_task.should_receive(:cancel_workflow_execution)
 
-						event_handlers[:ActivityTaskFailed].process(decision_task, event)
+						event_handlers[:ActivityTaskFailed].call(decision_task, event)
 					end
 
           it "should reschedule the activity if requested" do
@@ -209,7 +209,7 @@ module SimplerWorkflow
             decision_task.should_receive(:scheduled_event).with(event).twice.and_return(scheduled_event)
             decision_task.should_receive(:schedule_activity_task).with(test_activity.to_activity_type, input: scheduled_event.attributes.input)
 
-            event_handlers[:ActivityTaskFailed].process(decision_task, event)
+            event_handlers[:ActivityTaskFailed].call(decision_task, event)
           end
 
 				end
@@ -226,7 +226,7 @@ module SimplerWorkflow
 
               decision_task.should_receive(:scheduled_event).twice.and_return(scheduled_event)
               decision_task.should_receive(:schedule_activity_task).with(activity_type, input: scheduled_event.attributes.input)
-              event_handlers[:ActivityTaskTimedOut].process(decision_task, event)
+              event_handlers[:ActivityTaskTimedOut].call(decision_task, event)
             end
           end
 
@@ -236,7 +236,7 @@ module SimplerWorkflow
 
             decision_task.should_receive(:fail_workflow_execution)
 
-            event_handlers[:ActivityTaskTimedOut].process(decision_task, event)
+            event_handlers[:ActivityTaskTimedOut].call(decision_task, event)
           end
         end
       end

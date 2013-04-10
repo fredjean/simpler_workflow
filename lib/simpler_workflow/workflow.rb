@@ -35,7 +35,7 @@ module SimplerWorkflow
           @time_to_exit = true
         end
 
-        Signal.trap('INT') do 
+        Signal.trap('INT') do
           logger.info("Received SIGINT")
           Process.exit!(0)
         end
@@ -82,19 +82,19 @@ module SimplerWorkflow
     end
 
     def on_start_execution(&block)
-      event_handlers['WorkflowExecutionStarted'] = WorkflowEventHandler.new(&block)
+      event_handlers['WorkflowExecutionStarted'] = block
     end
 
     def on_activity_completed(&block)
-      event_handlers['ActivityTaskCompleted'] = WorkflowEventHandler.new(&block)
+      event_handlers['ActivityTaskCompleted'] = block
     end
 
     def on_activity_failed(&block)
-      event_handlers['ActivityTaskFailed'] = WorkflowEventHandler.new(&block)
+      event_handlers['ActivityTaskFailed'] = block
     end
 
     def on_activity_timed_out(&block)
-      event_handlers['ActivityTaskTimedOut'] = WorkflowEventHandler.new(&block)
+      event_handlers['ActivityTaskTimedOut'] = block
     end
 
     def self.[](name, version)
@@ -135,15 +135,15 @@ module SimplerWorkflow
       logger.info("Received decision task")
       decision_task.new_events.each do |event|
         logger.info("Processing #{event.event_type}")
-        event_handlers.fetch(event.event_type, DefaultEventHandler.new(self)).process(decision_task, event)
+        event_handlers.fetch(event.event_type, DefaultEventHandler.new(self)).call(decision_task, event)
       end
     end
 
     def event_handlers
       @event_handlers ||= Map[
-        :WorkflowExecutionStarted , WorkflowExecutionStartedHandler.new(self) , 
-        :ActivityTaskCompleted    , ActivityTaskCompletedHandler.new(self)    , 
-        :ActivityTaskFailed       , ActivityTaskFailedHandler.new(self)       , 
+        :WorkflowExecutionStarted , WorkflowExecutionStartedHandler.new(self) ,
+        :ActivityTaskCompleted    , ActivityTaskCompletedHandler.new(self)    ,
+        :ActivityTaskFailed       , ActivityTaskFailedHandler.new(self)       ,
         :ActivityTaskTimedOut     , ActivityTaskTimedOutHandler.new(self)
         ]
     end
@@ -175,23 +175,11 @@ module SimplerWorkflow
         workflow.initial_activity_type
       end
 
-      def process(*args); end
-    end
-
-    class WorkflowEventHandler
-      attr_accessor :handler
- 
-      def initialize(&block)
-        @handler = block
-      end
-
-      def process(decision_task, event)
-        handler.call(decision_task, event)
-      end
+      def call(*args); end
     end
 
     class ActivityTaskTimedOutHandler < DefaultEventHandler
-      def process(decision_task, event)
+      def call(decision_task, event)
         case event.attributes.timeoutType
         when 'START_TO_CLOSE', 'SCHEDULE_TO_START', 'SCHEDULE_TO_CLOSE'
           last_activity_type = last_activity(decision_task, event)
@@ -204,10 +192,10 @@ module SimplerWorkflow
     end
 
     class ActivityTaskFailedHandler < DefaultEventHandler
-      def process(decision_task, event)
+      def call(decision_task, event)
         last_activity_type = last_activity(decision_task, event)
         failed_activity = domain.activities[last_activity_type]
-        
+
         case failed_activity.failure_policy
         when :abort, :cancel
           SimplerWorkflow.logger.info("Cancelling workflow execution.")
@@ -223,7 +211,7 @@ module SimplerWorkflow
     end
 
     class ActivityTaskCompletedHandler < DefaultEventHandler
-      def process(decision_task, event)
+      def call(decision_task, event)
         last_activity_type = last_activity(decision_task, event)
 
         completed_activity = domain.activities[last_activity_type]
@@ -238,7 +226,7 @@ module SimplerWorkflow
     end
 
     class WorkflowExecutionStartedHandler < DefaultEventHandler
-      def process(decision_task, event)
+      def call(decision_task, event)
         decision_task.schedule_activity_task initial_activity_type, input: event.attributes.input
       end
     end
