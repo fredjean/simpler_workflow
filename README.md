@@ -187,6 +187,16 @@ Here are a few recommendations on when to change the version of a workflow or ac
 2. You may want to bump a version if you have work in progress under an existing workflow and you need to introduce changes for new work. You will need to keep the older activity and or workflow around while it completes.
 3. You do not need to bump the version when you change the work performed by the activity or the decision loop itself. This is code that is directly managed by SimplerWorkflow and isn't communicated to AWS. This only works if you do not want previous workflows to finish using the previous version of the code though.
 
+### Triggering Workflows
+
+You can trigger the worklow with the following command:
+
+```ruby
+SimplerWorkflow::Domain["my-test-domain"].start_workflow("hello-world", "1.0.1", "AWS")
+```
+
+The parameters are the name of the workflow, the version as well as a string representing the input to the workflow.
+
 ## Running Workflows
 
 There is a new Rake task called ```simpler_workflow:work``` that will
