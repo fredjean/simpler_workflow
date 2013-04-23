@@ -2,18 +2,18 @@ module SimplerWorkflow
   class Activity
     include OptionsAsMethods
 
-    DEFAULT_OPTIONS = {
-      :default_task_list => name,
-      :default_task_start_to_close_timeout => 5 * 60,
-      :default_task_schedule_to_start_timeout => 5 * 60,
-      :default_task_schedule_to_close_timeout => 10 * 60,
-      :default_task_heartbeat_timeout => :none
-    }
-
     attr_reader :domain, :name, :version, :options, :next_activity
 
     def initialize(domain, name, version)
-      @options = DEFAULT_OPTIONS.dup
+      default_options =
+        {
+        :default_task_list => name,
+        :default_task_start_to_close_timeout => 5 * 60,
+        :default_task_schedule_to_start_timeout => 5 * 60,
+        :default_task_schedule_to_close_timeout => 10 * 60,
+        :default_task_heartbeat_timeout => :none
+      }
+      @options = default_options.dup
       @domain = domain
       @name = name
       @version = version
@@ -118,11 +118,7 @@ module SimplerWorkflow
                 logger.info("Received task...")
                 perform_task(task)
                 unless task.responded?
-                  if next_activity
-                    task.complete!
-                  else
-                    task.complete!
-                  end
+                  task.complete!
                 end
               rescue => e
                 context = {}
