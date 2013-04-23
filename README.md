@@ -1,6 +1,7 @@
 # SimplerWorkflow
 
 [![Build Status](https://secure.travis-ci.org/fredjean/simpler_workflow.png)](http://travis-ci.org/fredjean/simpler_workflow)
+[![Code Climate](https://codeclimate.com/github/fredjean/simpler_workflow.png)](https://codeclimate.com/github/fredjean/simpler_workflow)
 
 A wrapper around Amazon's Simple Workflow Service meant to simplify declaring and using activities and workflow. Provides some sane defaults
 and work around some idiosyncracies of the platform.
