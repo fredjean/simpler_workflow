@@ -100,7 +100,7 @@ module SimplerWorkflow
           @time_to_exit = true
         end
 
-        Signal.trap('INT') do 
+        Signal.trap('INT') do
           logger.info("Received SIGINT")
           Process.exit!(0)
         end
@@ -119,8 +119,7 @@ module SimplerWorkflow
                 perform_task(task)
                 unless task.responded?
                   if next_activity
-                    result = {:next_activity => next_activity}.to_json
-                    task.complete!(:result => result)
+                    task.complete!
                   else
                     task.complete!
                   end
