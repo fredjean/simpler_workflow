@@ -4,7 +4,7 @@ module SimplerWorkflow
 
     attr_reader :domain, :name, :version, :options, :next_activity
 
-    def initialize(domain, name, version)
+    def initialize(domain, name, version, options = {})
       default_options =
         {
         :default_task_list => name,
@@ -13,7 +13,7 @@ module SimplerWorkflow
         :default_task_schedule_to_close_timeout => 10 * 60,
         :default_task_heartbeat_timeout => :none
       }
-      @options = default_options.dup
+      @options = default_options.merge(options)
       @domain = domain
       @name = name
       @version = version
