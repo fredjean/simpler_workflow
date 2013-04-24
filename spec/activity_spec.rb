@@ -44,6 +44,7 @@ module SimplerWorkflow
         its(:version) { should == '1.0.0' }
         its(:domain) { should == domain }
         its(:failure_policy) { should == :fail }
+        its(:task_list) { should == 'test-activity' }
       end
 
       context "Setting the failure policy" do

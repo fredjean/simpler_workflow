@@ -2,7 +2,7 @@ module SimplerWorkflow
   class Activity
     include OptionsAsMethods
 
-    attr_reader :domain, :name, :version, :options, :next_activity
+    attr_reader :domain, :name, :version, :options, :next_activity, :task_list
 
     def initialize(domain, name, version, options = {})
       default_options =
@@ -18,6 +18,7 @@ module SimplerWorkflow
       @name = name
       @version = version
       @failure_policy = :fail
+      @task_list = name.to_s
     end
 
     def on_success(activity, version = nil)
@@ -113,7 +114,7 @@ module SimplerWorkflow
         loop do
           begin
             logger.info("Starting activity_loop for #{name}")
-            domain.activity_tasks.poll(name.to_s) do |task|
+            domain.activity_tasks.poll(task_list) do |task|
               begin
                 logger.info("Received task...")
                 perform_task(task)
