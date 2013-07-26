@@ -140,7 +140,7 @@ module SimplerWorkflow
             scheduled_event.set(:attributes, :activity_type, scheduled_activity.to_activity_type)
 
             decision_task.should_receive(:scheduled_event).with(event).twice.and_return(scheduled_event)
-						decision_task.should_receive(:schedule_activity).with(next_activity, input: scheduled_event.attributes.input)
+						decision_task.should_receive(:schedule_activity_task).with(next_activity, input: scheduled_event.attributes.input)
 
 						event_handlers[:ActivityTaskCompleted].call(decision_task, event)
 					end
