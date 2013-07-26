@@ -218,7 +218,7 @@ module SimplerWorkflow
 
         if next_activity = completed_activity.next_activity
           activity_type = domain.activity_types[next_activity.name, next_activity.version]
-          decision_task.schedule_activity activity_type, input: scheduled_event(decision_task, event).attributes.input
+          decision_task.schedule_activity_task activity_type, input: scheduled_event(decision_task, event).attributes.input
         else
           decision_task.complete_workflow_execution(result: 'success')
         end
