@@ -15,8 +15,6 @@ module SimplerWorkflow
 			base.pidfile_path "log/pid/#{base.to_s.downcase}.pid"
 			base.lockfile_path "log/pid/#{base.to_s.downcase}.lock"
 
-
-
 			# By using USR1 instead of the QUIT signal, we ensure that
 			# this process will only close if all it's children are terminated
 			# this convention avoids zombie processes.
