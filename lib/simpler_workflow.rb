@@ -57,4 +57,5 @@ module SimplerWorkflow
   autoload :ActivityRegistry, 'simpler_workflow/activity_registry'
   autoload :OptionsAsMethods, 'simpler_workflow/options_as_methods'
   autoload :DefaultExceptionReporter, 'simpler_workflow/default_exception_reporter'
+  autoload :ParentProcess, 'simpler_workflow/parent_process'
 end
