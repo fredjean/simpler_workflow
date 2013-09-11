@@ -13,7 +13,6 @@ module SimplerWorkflow
 			base.logfile_path "log/#{base.to_s.downcase}.log"
 			# put the ephimeral data in pid folder
 			base.pidfile_path "log/pid/#{base.to_s.downcase}.pid"
-			base.lockfile_path "log/pid/#{base.to_s.downcase}.lock"
 
 			# By using USR1 instead of the QUIT signal, we ensure that
 			# this process will only close if all it's children are terminated
@@ -35,9 +34,6 @@ module SimplerWorkflow
 				# seems to work. Most likely ruby wait for the whole
 				# method to finish.
 				$logger.close
-				# prevent problems for future boots
-				@lockfile.close #flock(File::LOCK_UN)
-
 			end
 			
 			def workers(val)
@@ -72,10 +68,7 @@ module SimplerWorkflow
 					exit 42
 				else
 					File.open(@pidfile_path, "w") { |f| f.write(Process.pid) }
-				end
 				
-				@lockfile = File.open(@lockfile_path, "w")
-				if @lockfile.flock(File::LOCK_EX | File::LOCK_NB)
 					# If we're ready to run, prepare the logger
 					$logger = Logger.new(@logfile_path)
 					$logger.level = @log_level if @log_level
@@ -85,9 +78,6 @@ module SimplerWorkflow
 					# we wait for all children processes to exit; when QUIT is sent
 					# we terminate them and this will automatically exit.
 					Process.waitall
-				else
-					# custom exit code captured in the rake task
-					exit 43
 				end
 			end
 
