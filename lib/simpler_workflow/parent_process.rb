@@ -77,6 +77,7 @@ module SimplerWorkflow
 					@workers.times { yield }
 					# we wait for all children processes to exit; when QUIT is sent
 					# we terminate them and this will automatically exit.
+					Process.setsid
 					Process.daemon
 					Process.waitall
 				end
