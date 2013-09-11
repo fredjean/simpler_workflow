@@ -97,12 +97,18 @@ module SimplerWorkflow
         $0 = "Activity: #{name} #{version}"
 
         Signal.trap('QUIT') do
-          logger.info("Received SIGQUIT")
-          @time_to_exit = true
+          # Don't log in trap, ruby 2 complains
+          # since we need to exit quickly, only delay quit
+          # if we are in the middle of a task
+          if @in_task
+            @time_to_exit = true 
+          else
+            Process.exit 0
+          end
         end
 
         Signal.trap('INT') do
-          logger.info("Received SIGINT")
+          # Don't log in trap, ruby 2 complains
           Process.exit!(0)
         end
 
@@ -111,11 +117,16 @@ module SimplerWorkflow
           SimplerWorkflow.after_fork.call
         end
 
+        def task_lock!
+          @in_task = true
+        end
+
         loop do
           begin
             logger.info("Starting activity_loop for #{name}")
             domain.activity_tasks.poll(task_list) do |task|
               begin
+                task_lock!
                 logger.info("Received task...")
                 perform_task(task)
                 unless task.responded?
@@ -130,6 +141,8 @@ module SimplerWorkflow
                 task.fail! :reason => e.message, :details => { :failure_policy => :fail }.to_json unless task.responded?
               end
             end
+            #just in case a quit signal arrives in the middle of the next polling cycle
+            @in_task = false 
             Process.exit(0) if @time_to_exit
           rescue Timeout::Error
             if @time_to_exit
