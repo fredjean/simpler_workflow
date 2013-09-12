@@ -5,6 +5,8 @@ module SimplerWorkflow
 		require 'fileutils'
 
 		def self.extended(base)
+			# Make sure the logger is available quickly
+			$logger = Logger.new STDOUT
 			
 			base.extend ClassMethods
 
@@ -70,7 +72,7 @@ module SimplerWorkflow
 					#File.open(@pidfile_path, "w") { |f| f.write(Process.pid) }
 					# If we're ready to run, prepare the logger
 					#$logger = Logger.new(@logfile_path)
-					$logger = Logger.new STDOUT
+					
 					$logger.level = @log_level if @log_level
 					# separate this execution in the log
 					$logger.info "Booting with #{@workers} workers----------------------------"
