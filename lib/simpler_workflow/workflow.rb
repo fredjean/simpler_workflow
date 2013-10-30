@@ -31,12 +31,18 @@ module SimplerWorkflow
         $0 = "Workflow: #{name} #{version}"
 
         Signal.trap('QUIT') do
-          logger.info("Received SIGQUIT")
-          @time_to_exit = true
+          # Don't log in trap, ruby 2 complains
+          # since we need to exit quickly, only delay quit
+          # if we are in the middle of a task
+          if @in_task
+            @time_to_exit = true 
+          else
+            Process.exit 0
+          end
         end
 
         Signal.trap('INT') do
-          logger.info("Received SIGINT")
+          # Don't log in trap, ruby 2 complains
           Process.exit!(0)
         end
 
@@ -48,6 +54,7 @@ module SimplerWorkflow
           begin
             logger.info("Waiting for a decision task for #{name.to_s}, #{version} listening to #{task_list}")
             domain.decision_tasks.poll_for_single_task(task_list) do |decision_task|
+              @in_task = true # lock for TERM signal handling
               handle_decision_task(decision_task)
             end
             Process.exit 0 if @time_to_exit
@@ -63,6 +70,8 @@ module SimplerWorkflow
             }
             SimplerWorkflow.exception_reporter.report(e, context)
             raise e
+          ensure
+            @in_task = false
           end
         end
       end
