@@ -22,7 +22,7 @@ module SimplerWorkflow
 		#	end
 		#	script_path = File.expand_path '../boot.rb', __FILE__
 		#	Daemons.run script_path, {
-		#		:app_name   => "credibanco_daemon",
+		#		:app_name   => "my_daemon",
 		#		:dir_mode   => dirmode,
 		#		:log_dir	=> log_dir,
 		#		:dir        => pid_dir,
