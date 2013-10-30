@@ -50,18 +50,13 @@ module SimplerWorkflow
           SimplerWorkflow.after_fork.call
         end
 
-        def task_lock!
-          @in_task = true
-        end
-
         loop do
           begin
             logger.info("Waiting for a decision task for #{name.to_s}, #{version} listening to #{task_list}")
             domain.decision_tasks.poll_for_single_task(task_list) do |decision_task|
-              task_lock! and handle_decision_task(decision_task)
+              @in_task = true # lock for TERM signal handling
+              handle_decision_task(decision_task)
             end
-            #just in case a quit signal arrives in the middle of the next polling cycle
-            @in_task = false 
             Process.exit 0 if @time_to_exit
           rescue Timeout::Error => e
             if @time_to_exit
@@ -75,6 +70,8 @@ module SimplerWorkflow
             }
             SimplerWorkflow.exception_reporter.report(e, context)
             raise e
+          ensure
+            @in_task = false
           end
         end
       end
