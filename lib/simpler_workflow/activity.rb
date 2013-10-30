@@ -117,17 +117,13 @@ module SimplerWorkflow
           SimplerWorkflow.after_fork.call
         end
 
-        def task_lock!
-          @in_task = true
-        end
-
         loop do
           begin
             logger.info("Starting activity_loop for #{name}")
             domain.activity_tasks.poll(task_list) do |task|
               begin
-                task_lock!
                 logger.info("Received task...")
+                @in_task = true
                 perform_task(task)
                 unless task.responded?
                   task.complete!
@@ -139,10 +135,10 @@ module SimplerWorkflow
                 context[:activity_id] = task.activity_id
                 SimplerWorkflow.exception_reporter.report(e, context)
                 task.fail! :reason => e.message, :details => { :failure_policy => :fail }.to_json unless task.responded?
+              ensure
+                @in_task = false
               end
             end
-            #just in case a quit signal arrives in the middle of the next polling cycle
-            @in_task = false 
             Process.exit(0) if @time_to_exit
           rescue Timeout::Error
             if @time_to_exit
