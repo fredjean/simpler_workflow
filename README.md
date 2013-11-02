@@ -198,7 +198,77 @@ Here are a few recommendations on when to change the version of a workflow or ac
 2. You may want to bump a version if you have work in progress under an existing workflow and you need to introduce changes for new work. You will need to keep the older activity and or workflow around while it completes.
 3. You do not need to bump the version when you change the work performed by the activity or the decision loop itself. This is code that is directly managed by SimplerWorkflow and isn't communicated to AWS. This only works if you do not want previous workflows to finish using the previous version of the code though.
 
-## Running Workflows
+## Running Workflows as Daemons
+
+Often you'll need to expose several SWF components and make sure they run at all time on a server as daemons. For this, you may use `ParentProcess` in companion with a demonizer like the daemons gem. In the parent process, you define what children it must monitor and how many versions of each children must run.
+
+Here's a sample use of parent process.
+
+```ruby
+class SimpleWorkflowAPI
+  
+  extend SimplerWorkflow::ParentProcess
+ 
+  log_level Logger::DEBUG
+ 
+  workers 4
+ 
+  domain = SimplerWorkflow::Domain.domains "my_ops"
+ 
+  # define your activities
+  test_activity = domain.register_activity :test, "1.0.0" do
+    perform_activity do |task|
+      task.complete! :result => "approved"
+    end
+  end
+ 
+  # let the parent process start the loop
+  # this boot will be run as many times as workers you indicate
+  # e.g. here you'll have 4 instances of the test_activity running in parallel.
+  on_boot do
+    test_activity.start_activity_loop
+    # more activities initializations go here
+  end
+end
+```
+
+This is only the class starting the processes, if you need to daemonize this an expose as a unix service, for example in `/etc/init.d/simpler_workflow`, you can create a daemon script and link it to the services folder and then configure it to start on boot.
+
+Assuming the last example is called `boot.rb` this can be a sample `daemon.rb`:
+
+```ruby
+#!/usr/bin/env/ ruby
+require 'rubygems'
+require 'bundler/setup' #load all gems in your Gemfile
+require 'daemons' # require the daemons gem
+
+dirmode = :normal
+# Check if we're in a deployment machine
+# to store logs in /var/run or in the app folder
+if ENV['ENV']
+        log_dir = "/var/log/swf"
+        pid_dir = "/var/run/swf"
+else
+        log_dir = File.expand_path '../log/', __FILE__
+        pid_dir = File.expand_path '../log/pid', __FILE__
+end
+script_path = File.expand_path '../boot.rb', __FILE__
+Daemons.run script_path, {
+        :app_name   => "my_daemon",
+        :dir_mode   => dirmode,
+        :log_dir        => log_dir,
+        :dir        => pid_dir,
+        :multiple   => false,
+        :monitor    => true,
+        :log_output => true,
+        # backtrace causes errors detecting as uncatched
+        # some correctly handled exceptions. Keep disabled.
+        :backtrace  => false
+  }
+```
+
+For more details on daemons you can look in http://daemons.rubyforge.org/Daemons.html 
+You can still use any other daemonization script, or even handle it yourself as taught in http://www.jstorimer.com/products/working-with-unix-processes
 
 There is a new Rake task called ```simpler_workflow:work``` that will
 look for workflows located under the ```lib/workflow``` directory. This
