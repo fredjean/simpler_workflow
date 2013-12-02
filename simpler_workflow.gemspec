@@ -27,6 +27,7 @@ EOM
   gem.require_paths = ["lib"]
   gem.version       = SimplerWorkflow::VERSION
   gem.required_ruby_version = '>= 1.9.0'
+  gem.license       = 'MIT'
 
   gem.add_dependency 'aws-sdk'
   gem.add_dependency 'map'
@@ -36,6 +37,6 @@ EOM
   gem.add_development_dependency 'travis-lint'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pry-nav'
-	gem.add_development_dependency 'logging'
+  gem.add_development_dependency 'logging'
 
 end
