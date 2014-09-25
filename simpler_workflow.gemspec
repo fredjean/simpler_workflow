@@ -30,10 +30,9 @@ EOM
   gem.license       = 'MIT'
 
   gem.add_dependency 'aws-sdk', '< 2.0'
-  gem.add_dependency 'map'
-  gem.add_development_dependency 'map'
+  gem.add_dependency 'map', '~> 6.5.0'
   gem.add_development_dependency 'rake'
-  gem.add_development_dependency 'rspec'
+  gem.add_development_dependency 'rspec', '< 3.0'
   gem.add_development_dependency 'travis-lint'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pry-nav'
