@@ -12,7 +12,7 @@ simpler_workflow #{SimplerWorkflow::VERSION}
 ========================
 
 Have a look at https://github.com/fredjean/simpler_workflow/wiki/MIgrating-to-0.2.0 if you
-are upgrading from a 0.1.x version of the gem. There is a fundamental change in how the 
+are upgrading from a 0.1.x version of the gem. There is a fundamental change in how the
 activity and decision loops are run. You may need to adjust your application for this to work.
 
 Thank you for installing simpler_workflow. I hope you find it useful.
@@ -29,7 +29,7 @@ EOM
   gem.required_ruby_version = '>= 1.9.0'
   gem.license       = 'MIT'
 
-  gem.add_dependency 'aws-sdk'
+  gem.add_dependency 'aws-sdk', '< 2.0'
   gem.add_dependency 'map'
   gem.add_development_dependency 'map'
   gem.add_development_dependency 'rake'
